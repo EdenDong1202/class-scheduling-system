@@ -1,4 +1,4 @@
-# Class Scheduling System（Teable + AI Coding 应用）
+# 校区排课系统（Teable + AI Coding 应用）
 
 > 一个由非程序员通过 **Teable 多维表格 + AI Coding 应用** 搭建的教培机构排课管理系统。
 > 本仓库主要展示 **产品设计思路、系统架构与流程设计**，源码由 Teable AI 生成、经人工迭代打磨。
