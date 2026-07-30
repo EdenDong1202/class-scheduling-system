@@ -1,0 +1,567 @@
+{
+  "id": "YOUR_TEABLE_BASE_ID",
+  "name": "xx分校排课系统（模板）",
+  "icon": null,
+  "version": "release.2026-05-28T09-55-17Z.1789",
+  "tables": [
+    {
+      "id": "YOUR_TEABLE_TABLE_ID",
+      "name": "排课总台账",
+      "order": 1,
+      "dbTableName": "Sheet1",
+      "fields": [
+        {
+          "id": "fldPyAe0vkAnPS90WVk",
+          "name": "学生",
+          "type": "singleLineText",
+          "options": {},
+          "dbFieldName": "Xue_Sheng",
+          "unique": false,
+          "isPrimary": true,
+          "order": 0,
+          "dbFieldType": "TEXT",
+          "cellValueType": "string",
+          "createdTime": "2026-07-23T08:23:21.341Z"
+        },
+        {
+          "id": "fldCnYIToLNIYTzp2CY",
+          "name": "季度",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "25夏",
+                "id": "cho2BIMggcB",
+                "color": "cyanLight1"
+              },
+              {
+                "name": "25秋",
+                "id": "choZ94II37N",
+                "color": "green"
+              },
+              {
+                "name": "25寒",
+                "id": "cho6WhEMSTr",
+                "color": "yellow"
+              },
+              {
+                "name": "26春",
+                "id": "cho5BGlWHMf",
+                "color": "cyanDark1"
+              },
+              {
+                "name": "26暑",
+                "id": "cho10NZ6Mvw",
+                "color": "pinkLight1"
+              },
+              {
+                "name": "26秋",
+                "id": "chovqtP11Vp",
+                "color": "greenLight1"
+              },
+              {
+                "name": "26夏",
+                "id": "choeIIYjm6E",
+                "color": "purpleBright"
+              },
+              {
+                "name": "26寒",
+                "id": "cho5zBjps8j",
+                "color": "orangeLight2"
+              }
+            ]
+          },
+          "dbFieldName": "Ji_Du",
+          "order": 1,
+          "aiConfig": {
+            "modelKey": "anthropic@deepseek-v4-pro@teable",
+            "isAutoFill": true,
+            "attachPrompt": "分析日期，归类为季度，命名方式为25寒、26春等\n季度规则：2025年9-12月为25秋；2026年1、2月为25寒；2026年3-6月为26春；7、8月为26夏；9-12月为26秋，以此类推",
+            "type": "classification",
+            "sourceFieldId": "fldoXA1f70MlokbiNEg"
+          },
+          "dbFieldType": "TEXT",
+          "cellValueType": "string",
+          "createdTime": "2026-07-23T08:23:21.732Z"
+        },
+        {
+          "id": "fldob9JTgLMq4YOUnrL",
+          "name": "年级",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "一年级",
+                "id": "choNfedtzQt",
+                "color": "purpleLight1"
+              },
+              {
+                "name": "二年级",
+                "id": "choLFfUll6r",
+                "color": "blueBright"
+              },
+              {
+                "name": "三年级",
+                "id": "choxKwnafSB",
+                "color": "greenLight2"
+              },
+              {
+                "name": "四年级",
+                "id": "chomUaDT8Nx",
+                "color": "purpleLight2"
+              },
+              {
+                "name": "五年级",
+                "id": "choyA6Hdqk6",
+                "color": "greenBright"
+              },
+              {
+                "name": "六年级",
+                "id": "choXQHy6tJb",
+                "color": "redLight1"
+              },
+              {
+                "name": "初一",
+                "id": "choLjjsJj5n",
+                "color": "orangeLight1"
+              },
+              {
+                "name": "初二",
+                "id": "choMtj0AHS3",
+                "color": "blueDark1"
+              }
+            ]
+          },
+          "dbFieldName": "Nian_Ji",
+          "order": 1,
+          "dbFieldType": "TEXT",
+          "cellValueType": "string",
+          "createdTime": "2026-07-23T08:23:21.341Z"
+        },
+        {
+          "id": "fldwo6WlpeYx1xRkBH4",
+          "name": "课程类型",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "name": "诊断课",
+                "id": "choiHAo7g8E",
+                "color": "pinkLight2"
+              },
+              {
+                "name": "小灶课",
+                "id": "choAcA2qNui",
+                "color": "greenLight2"
+              },
+              {
+                "name": "长期班",
+                "id": "chorNziUTyJ",
+                "color": "blueLight2"
+              },
+              {
+                "name": "短期班",
+                "id": "chos3zKTz8q",
+                "color": "orangeLight1"
+              },
+              {
+                "name": "全体事项",
+                "id": "cho0HjTYomO",
+                "color": "grayLight2"
+              },
+              {
+                "name": "个人事项",
+                "id": "chohfLURxq8",
+                "color": "blueBright"
+              }
+            ]
+          },
+          "dbFieldName": "Ke_Cheng_Lei_Xing",
+          "order": 2,
+          "dbFieldType": "TEXT",
+          "cellValueType": "string",
+          "createdTime": "2026-07-23T08:23:21.341Z"
+        },
+        {
+          "id": "fldcxFb6o3ImFmOoZwR",
+          "name": "老师",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "id": "choMKJsvX46",
+                "name": "教师1",
+                "color": "tealLight2"
+              },
+              {
+                "id": "chog38iJOe2",
+                "name": "教师2",
+                "color": "greenDark1"
+              },
+              {
+                "id": "choxWc8B03b",
+                "name": "教师3",
+                "color": "yellowLight1"
+              }
+            ]
+          },
+          "dbFieldName": "Lao_Shi",
+          "order": 3,
+          "dbFieldType": "TEXT",
+          "cellValueType": "string",
+          "createdTime": "2026-07-23T08:23:21.341Z"
+        },
+        {
+          "id": "fldoXA1f70MlokbiNEg",
+          "name": "日期",
+          "type": "date",
+          "options": {
+            "formatting": {
+              "timeZone": "Asia/Shanghai",
+              "date": "YYYY-MM-DD",
+              "time": "None"
+            }
+          },
+          "dbFieldName": "Ri_Qi",
+          "order": 4,
+          "dbFieldType": "DATETIME",
+          "cellValueType": "dateTime",
+          "createdTime": "2026-07-23T08:23:21.341Z"
+        },
+        {
+          "id": "fldBp7vbc7C6657mZjM",
+          "name": "灵活时间",
+          "type": "singleLineText",
+          "options": {},
+          "dbFieldName": "Bei_Zhu",
+          "order": 6,
+          "dbFieldType": "TEXT",
+          "cellValueType": "string",
+          "createdTime": "2026-07-23T08:23:21.341Z"
+        },
+        {
+          "id": "fldiUQuvtzRjCRQKWMp",
+          "name": "教室",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "id": "choxE8CUI93",
+                "name": "教室1",
+                "color": "blueBright"
+              },
+              {
+                "id": "choyZqp71eW",
+                "name": "教室2",
+                "color": "tealDark1"
+              },
+              {
+                "id": "choLEXHY7cP",
+                "name": "教室3",
+                "color": "orangeBright"
+              },
+              {
+                "id": "chogjwPHEsj",
+                "name": "教室4",
+                "color": "purpleLight2"
+              },
+              {
+                "id": "choUs3PlW01",
+                "name": "不存在",
+                "color": "yellowLight1"
+              }
+            ]
+          },
+          "dbFieldName": "Jiao_Shi",
+          "order": 7,
+          "dbFieldType": "TEXT",
+          "cellValueType": "string",
+          "createdTime": "2026-07-23T08:23:21.341Z"
+        },
+        {
+          "id": "fldtOTWeGoeizRxF6nz",
+          "name": "时段",
+          "type": "singleSelect",
+          "options": {
+            "choices": [
+              {
+                "id": "choUDtMMtkD",
+                "name": "A段 08:00-10:00",
+                "color": "blueBright"
+              },
+              {
+                "id": "cho2o8MaiXS",
+                "name": "B段 10:20-12:20",
+                "color": "greenBright"
+              },
+              {
+                "id": "chovYmSZ7CO",
+                "name": "C段 13:10-15:10",
+                "color": "orangeBright"
+              },
+              {
+                "id": "choRUw18NV3",
+                "name": "D段 15:30-17:30",
+                "color": "purpleBright"
+              },
+              {
+                "id": "chosZLEYbJw",
+                "name": "E段 18:20-20:20",
+                "color": "cyanBright"
+              },
+              {
+                "id": "choTVjB0AEt",
+                "name": "S-A段 9:30-12:00",
+                "color": "green"
+              },
+              {
+                "id": "chomSbBbhE0",
+                "name": "S-B段 12:30-15:00",
+                "color": "cyanLight2"
+              },
+              {
+                "id": "choSR52GjDb",
+                "name": "S-C段 15:20-17:50",
+                "color": "orangeDark1"
+              },
+              {
+                "id": "cho8plMG18i",
+                "name": "S-D段 18:00-20:30",
+                "color": "redLight2"
+              }
+            ]
+          },
+          "dbFieldName": "Shi_Duan",
+          "order": 8,
+          "dbFieldType": "TEXT",
+          "cellValueType": "string",
+          "createdTime": "2026-07-23T08:23:21.341Z"
+        },
+        {
+          "id": "fldycyssuHvhmbl09QP",
+          "name": "课程主题",
+          "type": "singleLineText",
+          "options": {},
+          "dbFieldName": "Ke_Cheng_Zhu_Ti",
+          "order": 9,
+          "dbFieldType": "TEXT",
+          "cellValueType": "string",
+          "createdTime": "2026-07-23T08:23:21.341Z"
+        },
+        {
+          "id": "fldyl8cEm00cKWiayRJ",
+          "name": "排序权重",
+          "type": "formula",
+          "options": {
+            "expression": "IF(IS_SAME({fldoXA1f70MlokbiNEg},TODAY(),\"day\"),0,IF(IS_AFTER({fldoXA1f70MlokbiNEg},TODAY(),\"day\"),DATETIME_DIFF({fldoXA1f70MlokbiNEg},TODAY(),\"days\"),99999+DATETIME_DIFF(TODAY(),{fldoXA1f70MlokbiNEg},\"days\")))",
+            "timeZone": "Asia/Shanghai",
+            "formatting": {
+              "type": "decimal",
+              "precision": 2
+            }
+          },
+          "dbFieldName": "Pai_Xu_Quan_Chong",
+          "order": 11,
+          "dbFieldType": "REAL",
+          "cellValueType": "number",
+          "isMultipleCellValue": false,
+          "createdTime": "2026-07-23T08:23:21.607Z"
+        }
+      ],
+      "views": [
+        {
+          "id": "viwp8sEXRAfBvJzOFrE",
+          "name": "Grid view",
+          "type": "grid",
+          "sort": {
+            "sortObjs": [
+              {
+                "fieldId": "fldyl8cEm00cKWiayRJ",
+                "order": "asc"
+              }
+            ],
+            "manualSort": false
+          },
+          "group": [
+            {
+              "fieldId": "fldCnYIToLNIYTzp2CY",
+              "order": "desc"
+            }
+          ],
+          "columnMeta": {
+            "fldPyAe0vkAnPS90WVk": {
+              "order": -2
+            },
+            "fldob9JTgLMq4YOUnrL": {
+              "order": 4
+            },
+            "fldwo6WlpeYx1xRkBH4": {
+              "order": 5
+            },
+            "fldcxFb6o3ImFmOoZwR": {
+              "order": 2
+            },
+            "fldoXA1f70MlokbiNEg": {
+              "order": 6
+            },
+            "fldBp7vbc7C6657mZjM": {
+              "order": 7
+            },
+            "fldiUQuvtzRjCRQKWMp": {
+              "order": 7
+            },
+            "fldtOTWeGoeizRxF6nz": {
+              "order": 3
+            },
+            "fldycyssuHvhmbl09QP": {
+              "order": -1
+            },
+            "fldCnYIToLNIYTzp2CY": {
+              "order": 6.5
+            },
+            "fldyl8cEm00cKWiayRJ": {
+              "order": 100,
+              "hidden": true
+            }
+          },
+          "order": 0
+        },
+        {
+          "id": "viwWkngiUFjMkn4LcA3",
+          "name": "日历视图",
+          "type": "calendar",
+          "options": {
+            "startDateFieldId": "fldoXA1f70MlokbiNEg",
+            "endDateFieldId": "fldoXA1f70MlokbiNEg",
+            "titleFieldId": "fldycyssuHvhmbl09QP"
+          },
+          "columnMeta": {
+            "fldPyAe0vkAnPS90WVk": {
+              "order": 0,
+              "visible": true
+            },
+            "fldob9JTgLMq4YOUnrL": {
+              "order": 1
+            },
+            "fldwo6WlpeYx1xRkBH4": {
+              "order": 2
+            },
+            "fldcxFb6o3ImFmOoZwR": {
+              "order": 3
+            },
+            "fldoXA1f70MlokbiNEg": {
+              "order": 4
+            },
+            "fldBp7vbc7C6657mZjM": {
+              "order": 5
+            },
+            "fldiUQuvtzRjCRQKWMp": {
+              "order": 6
+            },
+            "fldtOTWeGoeizRxF6nz": {
+              "order": 7
+            },
+            "fldycyssuHvhmbl09QP": {
+              "order": 8
+            },
+            "fldCnYIToLNIYTzp2CY": {
+              "order": 9
+            },
+            "fldyl8cEm00cKWiayRJ": {
+              "order": 10
+            }
+          },
+          "order": 1
+        }
+      ]
+    }
+  ],
+  "folders": [],
+  "nodes": [
+    {
+      "id": "bnoL0udF7EZB7ViFdo9",
+      "parentId": null,
+      "resourceId": "YOUR_TEABLE_TABLE_ID",
+      "resourceType": "table",
+      "order": 8
+    },
+    {
+      "id": "bno21sibYm2WEdLDOJS",
+      "parentId": null,
+      "resourceId": "YOUR_TEABLE_APP_ID_1",
+      "resourceType": "app",
+      "order": 4
+    },
+    {
+      "id": "bnoYMJKPYS1m6wixOKd",
+      "parentId": null,
+      "resourceId": "YOUR_TEABLE_APP_ID_2",
+      "resourceType": "app",
+      "order": 4.5
+    },
+    {
+      "id": "bnouDzFXSEFxJfE2nqZ",
+      "parentId": null,
+      "resourceId": "YOUR_TEABLE_APP_ID_3",
+      "resourceType": "app",
+      "order": 3
+    }
+  ],
+  "plugins": {
+    "dashboard": [],
+    "panel": [],
+    "view": []
+  },
+  "workflows": [],
+  "authorityMatrix": {
+    "baseId": "YOUR_TEABLE_BASE_ID",
+    "defaultRole": null,
+    "adminUserIds": null,
+    "enabledTime": null,
+    "matrixRoles": []
+  },
+  "apps": [
+    {
+      "id": "YOUR_TEABLE_APP_ID_1",
+      "name": "排课看板",
+      "chatId": null,
+      "latestVersion": 1,
+      "versions": [
+        {
+          "version": 1,
+          "description": "f5225b8 新手引导编辑/删除改为点击课程卡片，加遮罩聚焦所需按钮",
+          "token": "<REDACTED>"
+        }
+      ],
+      "loginConfig": null
+    },
+    {
+      "id": "YOUR_TEABLE_APP_ID_2",
+      "name": "班课管理",
+      "chatId": null,
+      "latestVersion": 1,
+      "versions": [
+        {
+          "version": 1,
+          "description": "097ecac 右键课程卡片可复制课程，在编辑界面确认后新增",
+          "token": "<REDACTED>"
+        }
+      ],
+      "loginConfig": null
+    },
+    {
+      "id": "YOUR_TEABLE_APP_ID_3",
+      "name": "产品说明书",
+      "chatId": null,
+      "latestVersion": 1,
+      "versions": [
+        {
+          "version": 1,
+          "description": "72d2b6c 精简说明书章节并在快速上手添加应用跳转",
+          "token": "<REDACTED>"
+        }
+      ],
+      "loginConfig": null
+    }
+  ]
+}

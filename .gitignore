@@ -1,0 +1,18 @@
+# 环境变量与密钥 —— 永远不要提交
+.env
+.env.*
+!.env.example
+
+# 依赖与构建产物
+node_modules/
+.next/
+dist/
+out/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 原始导出包（可能含密钥）
+*.tea
+*.zip

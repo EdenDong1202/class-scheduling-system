@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>分校排课系统 · 设计展示</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+  html{scroll-behavior:smooth}
+  body{font-family:'Geist',ui-sans-serif,system-ui,"PingFang SC","Microsoft YaHei",sans-serif}
+  .diagram{background:#fff;border:1px solid #e2e8f0;border-radius:.75rem;padding:1rem;overflow-x:auto;display:flex;justify-content:center}
+  .diagram svg{max-width:100%;height:auto}
+  .arch-zoom{cursor:zoom-in}
+  .arch-zoom:focus{outline:2px solid #4f46e5;outline-offset:2px}
+  .lightbox{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,.86);cursor:zoom-out;padding:24px;overflow:auto;scrollbar-width:none;-ms-overflow-style:none}
+  .lightbox::-webkit-scrollbar{display:none;width:0;height:0}
+  .lightbox .lb-wrap{margin:auto;background:#fff;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,.5);padding:18px;box-sizing:border-box}
+  .lightbox svg{display:block;width:100%;height:auto;margin:0 auto}
+  .lightbox .lb-tip{position:fixed;top:16px;left:50%;transform:translateX(-50%);color:#e2e8f0;font-size:12px;letter-spacing:.05em;z-index:10000;pointer-events:none}
+  /* 课程卡片配色（与真实排课系统一致） */
+  .c-诊断课{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+  .c-小灶课{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+  .c-长期班{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+  .c-短期班{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+  .board td{transition:background .15s}
+  .board td:hover{background:#f8fafc}
+  .board td.locked:hover{background:transparent}
+  .chip-del{position:absolute;top:2px;right:6px;font-weight:700;opacity:.4;cursor:pointer}
+  .chip-del:hover{opacity:1}
+  .course{position:relative;border-radius:.375rem;padding:.375rem .625rem;font-size:.75rem;line-height:1.45}
+  .course b{font-size:.8125rem}
+  dialog{border:none;border-radius:.75rem;padding:0;max-width:360px;width:92%;box-shadow:0 20px 50px rgba(15,23,42,.25)}
+  dialog::backdrop{background:rgba(15,23,42,.4)}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 20px;border-radius:999px;font-size:.875rem;opacity:0;pointer-events:none;transition:opacity .3s;z-index:60}
+  .toast.show{opacity:1}
+  .course-clickable{position:relative}
+  .course-clickable::after{content:"+";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.25rem;color:#94a3b8;opacity:0;background:#f1f5f9;border-radius:.5rem}
+  .course-clickable:hover::after{opacity:1}
+  /* 时间轴看板 */
+  .tl-wrap{display:flex;gap:14px;overflow-x:auto;padding-bottom:6px}
+  .tl-room{width:168px;flex-shrink:0}
+  .tl-room-h{font-size:12px;font-weight:600;color:#475569;padding:6px 4px;text-align:center;background:#fff;border-bottom:1px solid #e2e8f0}
+  .tl-track{position:relative;height:720px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;background-image:repeating-linear-gradient(to bottom, transparent, transparent 59px, #e2e8f0 59px, #e2e8f0 60px)}
+  .tl-hour{position:absolute;left:2px;top:0;font-size:10px;color:#94a3b8;font-variant-numeric:tabular-nums;pointer-events:none}
+  .tl-clickable{cursor:pointer}
+  .tl-clickable:hover{background:#f1f5f9}
+  .tl-card{position:absolute;left:5px;right:5px;border-radius:.4rem;padding:.3rem .45rem;font-size:11px;line-height:1.3;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,.06)}
+  .tl-card b{font-size:12px}
+  .tl-card .t-time{font-variant-numeric:tabular-nums;opacity:.75;font-size:10px}
+  .tl-card-click{cursor:pointer}
+  .tl-card-click:hover{filter:brightness(.97)}
+  .tl-tabs{display:flex;gap:6px;flex-wrap:wrap}
+  .tl-tab{font-size:12px;padding:4px 12px;border-radius:999px;border:1px solid #cbd5e1;background:#fff;color:#475569;cursor:pointer;transition:.15s}
+  .tl-tab.active{background:#4f46e5;color:#fff;border-color:#4f46e5}
+  .tl-tab:hover{background:#eef2ff}
+</style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.pointer-events-none{pointer-events:none}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.sticky{position:sticky}.-left-20{left:-5rem}.-right-20{right:-5rem}.-top-20{top:-5rem}.top-0{top:0px}.top-10{top:2.5rem}.top-20{top:5rem}.bottom-5{bottom:1.25rem}.right-5{right:1.25rem}.z-30{z-index:30}.z-50{z-index:50}.mx-1{margin-left:0.25rem;margin-right:0.25rem}.mx-auto{margin-left:auto;margin-right:auto}.mt-0\.5{margin-top:0.125rem}.mt-1{margin-top:0.25rem}.mt-10{margin-top:2.5rem}.mt-2{margin-top:0.5rem}.mt-3{margin-top:0.75rem}.mt-4{margin-top:1rem}.mt-5{margin-top:1.25rem}.mt-6{margin-top:1.5rem}.mt-8{margin-top:2rem}.block{display:block}.inline-block{display:inline-block}.flex{display:flex}.inline-flex{display:inline-flex}.grid{display:grid}.hidden{display:none}.h-10{height:2.5rem}.h-14{height:3.5rem}.h-3\.5{height:0.875rem}.h-4{height:1rem}.h-48{height:12rem}.h-5{height:1.25rem}.h-6{height:1.5rem}.h-64{height:16rem}.h-8{height:2rem}.h-9{height:2.25rem}.h-fit{height:-moz-fit-content;height:fit-content}.min-h-screen{min-height:100vh}.w-10{width:2.5rem}.w-3\.5{width:0.875rem}.w-4{width:1rem}.w-48{width:12rem}.w-5{width:1.25rem}.w-56{width:14rem}.w-6{width:1.5rem}.w-64{width:16rem}.w-8{width:2rem}.w-9{width:2.25rem}.w-full{width:100%}.min-w-0{min-width:0px}.max-w-2xl{max-width:42rem}.max-w-3xl{max-width:48rem}.max-w-6xl{max-width:72rem}.flex-1{flex:1 1 0%}.shrink-0{flex-shrink:0}.scroll-mt-24{scroll-margin-top:6rem}.flex-wrap{flex-wrap:wrap}.items-start{align-items:flex-start}.items-center{align-items:center}.justify-end{justify-content:flex-end}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-1{gap:0.25rem}.gap-1\.5{gap:0.375rem}.gap-2{gap:0.5rem}.gap-2\.5{gap:0.625rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.gap-8{gap:2rem}.space-y-1 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.25rem * var(--tw-space-y-reverse))}.space-y-1\.5 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.375rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.375rem * var(--tw-space-y-reverse))}.space-y-16 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(4rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(4rem * var(--tw-space-y-reverse))}.space-y-3 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.75rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.75rem * var(--tw-space-y-reverse))}.space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.rounded{border-radius:0.25rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.rounded-md{border-radius:0.375rem}.rounded-xl{border-radius:0.75rem}.rounded-2xl{border-radius:1rem}.border{border-width:1px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-l{border-left-width:1px}.border-amber-200{--tw-border-opacity:1;border-color:rgb(253 230 138 / var(--tw-border-opacity, 1))}.border-emerald-200{--tw-border-opacity:1;border-color:rgb(167 243 208 / var(--tw-border-opacity, 1))}.border-indigo-200{--tw-border-opacity:1;border-color:rgb(199 210 254 / var(--tw-border-opacity, 1))}.border-slate-100{--tw-border-opacity:1;border-color:rgb(241 245 249 / var(--tw-border-opacity, 1))}.border-slate-200{--tw-border-opacity:1;border-color:rgb(226 232 240 / var(--tw-border-opacity, 1))}.border-slate-300{--tw-border-opacity:1;border-color:rgb(203 213 225 / var(--tw-border-opacity, 1))}.bg-amber-100{--tw-bg-opacity:1;background-color:rgb(254 243 199 / var(--tw-bg-opacity, 1))}.bg-amber-50{--tw-bg-opacity:1;background-color:rgb(255 251 235 / var(--tw-bg-opacity, 1))}.bg-amber-50\/40{background-color:rgb(255 251 235 / 0.4)}.bg-amber-500{--tw-bg-opacity:1;background-color:rgb(245 158 11 / var(--tw-bg-opacity, 1))}.bg-blue-50{--tw-bg-opacity:1;background-color:rgb(239 246 255 / var(--tw-bg-opacity, 1))}.bg-emerald-100{--tw-bg-opacity:1;background-color:rgb(209 250 229 / var(--tw-bg-opacity, 1))}.bg-emerald-100\/50{background-color:rgb(209 250 229 / 0.5)}.bg-emerald-50{--tw-bg-opacity:1;background-color:rgb(236 253 245 / var(--tw-bg-opacity, 1))}.bg-emerald-50\/40{background-color:rgb(236 253 245 / 0.4)}.bg-emerald-600{--tw-bg-opacity:1;background-color:rgb(5 150 105 / var(--tw-bg-opacity, 1))}.bg-green-50{--tw-bg-opacity:1;background-color:rgb(240 253 244 / var(--tw-bg-opacity, 1))}.bg-indigo-100{--tw-bg-opacity:1;background-color:rgb(224 231 255 / var(--tw-bg-opacity, 1))}.bg-indigo-100\/60{background-color:rgb(224 231 255 / 0.6)}.bg-indigo-50{--tw-bg-opacity:1;background-color:rgb(238 242 255 / var(--tw-bg-opacity, 1))}.bg-indigo-50\/40{background-color:rgb(238 242 255 / 0.4)}.bg-indigo-50\/50{background-color:rgb(238 242 255 / 0.5)}.bg-indigo-600{--tw-bg-opacity:1;background-color:rgb(79 70 229 / var(--tw-bg-opacity, 1))}.bg-orange-50{--tw-bg-opacity:1;background-color:rgb(255 247 237 / var(--tw-bg-opacity, 1))}.bg-slate-100{--tw-bg-opacity:1;background-color:rgb(241 245 249 / var(--tw-bg-opacity, 1))}.bg-slate-50{--tw-bg-opacity:1;background-color:rgb(248 250 252 / var(--tw-bg-opacity, 1))}.bg-slate-50\/60{background-color:rgb(248 250 252 / 0.6)}.bg-slate-900{--tw-bg-opacity:1;background-color:rgb(15 23 42 / var(--tw-bg-opacity, 1))}.bg-white{--tw-bg-opacity:1;background-color:rgb(255 255 255 / var(--tw-bg-opacity, 1))}.bg-white\/80{background-color:rgb(255 255 255 / 0.8)}.bg-white\/90{background-color:rgb(255 255 255 / 0.9)}.bg-gradient-to-b{background-image:linear-gradient(to bottom, var(--tw-gradient-stops))}.from-white{--tw-gradient-from:#fff var(--tw-gradient-from-position);--tw-gradient-to:rgb(255 255 255 / 0) var(--tw-gradient-to-position);--tw-gradient-stops:var(--tw-gradient-from), var(--tw-gradient-to)}.to-slate-50{--tw-gradient-to:#f8fafc var(--tw-gradient-to-position)}.p-4{padding:1rem}.p-5{padding:1.25rem}.p-6{padding:1.5rem}.px-1\.5{padding-left:0.375rem;padding-right:0.375rem}.px-2{padding-left:0.5rem;padding-right:0.5rem}.px-2\.5{padding-left:0.625rem;padding-right:0.625rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-4{padding-left:1rem;padding-right:1rem}.px-5{padding-left:1.25rem;padding-right:1.25rem}.py-0\.5{padding-top:0.125rem;padding-bottom:0.125rem}.py-1{padding-top:0.25rem;padding-bottom:0.25rem}.py-1\.5{padding-top:0.375rem;padding-bottom:0.375rem}.py-12{padding-top:3rem;padding-bottom:3rem}.py-16{padding-top:4rem;padding-bottom:4rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-2\.5{padding-top:0.625rem;padding-bottom:0.625rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.py-4{padding-top:1rem;padding-bottom:1rem}.pb-2{padding-bottom:0.5rem}.pb-6{padding-bottom:1.5rem}.pt-8{padding-top:2rem}.text-left{text-align:left}.text-center{text-align:center}.align-top{vertical-align:top}.font-mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}.text-2xl{font-size:1.5rem;line-height:2rem}.text-3xl{font-size:1.875rem;line-height:2.25rem}.text-base{font-size:1rem;line-height:1.5rem}.text-lg{font-size:1.125rem;line-height:1.75rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-medium{font-weight:500}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.leading-relaxed{line-height:1.625}.leading-tight{line-height:1.25}.tracking-wider{letter-spacing:0.05em}.text-amber-600{--tw-text-opacity:1;color:rgb(217 119 6 / var(--tw-text-opacity, 1))}.text-amber-800{--tw-text-opacity:1;color:rgb(146 64 14 / var(--tw-text-opacity, 1))}.text-amber-900{--tw-text-opacity:1;color:rgb(120 53 15 / var(--tw-text-opacity, 1))}.text-blue-700{--tw-text-opacity:1;color:rgb(29 78 216 / var(--tw-text-opacity, 1))}.text-emerald-600{--tw-text-opacity:1;color:rgb(5 150 105 / var(--tw-text-opacity, 1))}.text-emerald-700{--tw-text-opacity:1;color:rgb(4 120 87 / var(--tw-text-opacity, 1))}.text-green-700{--tw-text-opacity:1;color:rgb(21 128 61 / var(--tw-text-opacity, 1))}.text-indigo-600{--tw-text-opacity:1;color:rgb(79 70 229 / var(--tw-text-opacity, 1))}.text-indigo-700{--tw-text-opacity:1;color:rgb(67 56 202 / var(--tw-text-opacity, 1))}.text-indigo-800{--tw-text-opacity:1;color:rgb(55 48 163 / var(--tw-text-opacity, 1))}.text-orange-700{--tw-text-opacity:1;color:rgb(194 65 12 / var(--tw-text-opacity, 1))}.text-slate-300{--tw-text-opacity:1;color:rgb(203 213 225 / var(--tw-text-opacity, 1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184 / var(--tw-text-opacity, 1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139 / var(--tw-text-opacity, 1))}.text-slate-600{--tw-text-opacity:1;color:rgb(71 85 105 / var(--tw-text-opacity, 1))}.text-slate-700{--tw-text-opacity:1;color:rgb(51 65 85 / var(--tw-text-opacity, 1))}.text-slate-800{--tw-text-opacity:1;color:rgb(30 41 59 / var(--tw-text-opacity, 1))}.text-slate-900{--tw-text-opacity:1;color:rgb(15 23 42 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.shadow-sm{--tw-shadow:0 1px 2px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:0 1px 2px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.blur-3xl{--tw-blur:blur(64px);filter:var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow)}.backdrop-blur{--tw-backdrop-blur:blur(8px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition{transition-property:color, background-color, border-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.hover\:bg-indigo-50:hover{--tw-bg-opacity:1;background-color:rgb(238 242 255 / var(--tw-bg-opacity, 1))}.hover\:bg-indigo-700:hover{--tw-bg-opacity:1;background-color:rgb(67 56 202 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-50:hover{--tw-bg-opacity:1;background-color:rgb(248 250 252 / var(--tw-bg-opacity, 1))}.hover\:text-indigo-700:hover{--tw-text-opacity:1;color:rgb(67 56 202 / var(--tw-text-opacity, 1))}.group:hover .group-hover\:bg-indigo-100{--tw-bg-opacity:1;background-color:rgb(224 231 255 / var(--tw-bg-opacity, 1))}.group:hover .group-hover\:text-indigo-500{--tw-text-opacity:1;color:rgb(99 102 241 / var(--tw-text-opacity, 1))}.group:hover .group-hover\:text-indigo-600{--tw-text-opacity:1;color:rgb(79 70 229 / var(--tw-text-opacity, 1))}@media (min-width: 640px){.sm\:inline-flex{display:inline-flex}.sm\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.sm\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.sm\:px-6{padding-left:1.5rem;padding-right:1.5rem}.sm\:py-20{padding-top:5rem;padding-bottom:5rem}.sm\:text-3xl{font-size:1.875rem;line-height:2.25rem}.sm\:text-5xl{font-size:3rem;line-height:1}.sm\:text-lg{font-size:1.125rem;line-height:1.75rem}}@media (min-width: 768px){.md\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.md\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}}@media (min-width: 1024px){.lg\:block{display:block}.lg\:grid-cols-4{grid-template-columns:repeat(4, minmax(0, 1fr))}}</style></head>
+<body class="min-h-screen bg-slate-50 text-slate-900">
+
+  <!-- Top bar -->
+  <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur">
+    <div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
+      <div class="flex items-center gap-2">
+        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="calendar-range" aria-hidden="true" class="lucide lucide-calendar-range h-4 w-4"><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M16 2v4"></path><path d="M3 10h18"></path><path d="M8 2v4"></path><path d="M17 14h-6"></path><path d="M13 18H7"></path><path d="M7 14h.01"></path><path d="M17 18h.01"></path></svg>
+        </div>
+        <span class="text-sm font-semibold">排课系统 · 设计展示</span>
+      </div>
+      <a href="#quickstart" class="hidden items-center gap-1 rounded-full bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white transition hover:bg-indigo-700 sm:inline-flex">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="rocket" aria-hidden="true" class="lucide lucide-rocket h-3.5 w-3.5"><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09"></path><path d="M9 12a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.4 22.4 0 0 1-4 2z"></path><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 .05 5 .05"></path></svg> 快速上手
+      </a>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="relative overflow-hidden border-b border-slate-200 bg-gradient-to-b from-white to-slate-50">
+    <div class="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-indigo-100/60 blur-3xl"></div>
+    <div class="pointer-events-none absolute -left-20 top-10 h-48 w-48 rounded-full bg-emerald-100/50 blur-3xl"></div>
+    <div class="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+      <div class="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="sparkles" aria-hidden="true" class="lucide lucide-sparkles h-3.5 w-3.5"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"></path><path d="M20 2v4"></path><path d="M22 4h-4"></path><circle cx="4" cy="20" r="2"></circle></svg> 设计展示 · 项目主页
+      </div>
+      <h1 class="mt-4 max-w-3xl text-3xl font-bold leading-tight text-slate-900 sm:text-5xl">校区排课系统
+        <span class="block text-indigo-600">排课一体化设计展示</span>
+      </h1>
+      <p class="mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
+        本页为该系统的<strong class="font-semibold text-slate-800">产品说明书</strong>，完整呈现系统架构、数据模型、交互流程与可操作的排课看板演示等。
+        所有数据均为脱敏模板，不含任何真实信息。
+      </p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a href="#overview" class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-700">
+          开始阅读 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-right" aria-hidden="true" class="lucide lucide-chevron-right h-4 w-4"><path d="m9 18 6-6-6-6"></path></svg>
+        </a>
+        <a href="#board" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="calendar-range" aria-hidden="true" class="lucide lucide-calendar-range h-4 w-4"><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M16 2v4"></path><path d="M3 10h18"></path><path d="M8 2v4"></path><path d="M17 14h-6"></path><path d="M13 18H7"></path><path d="M7 14h.01"></path><path d="M17 18h.01"></path></svg> 排课看板
+        </a>
+        <a href="#manage" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="layout-dashboard" aria-hidden="true" class="lucide lucide-layout-dashboard h-4 w-4"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg> 班课管理
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Main layout -->
+  <div class="mx-auto flex max-w-6xl gap-8 px-4 py-12 sm:px-6">
+    <!-- Sidebar TOC -->
+    <aside class="sticky top-20 hidden h-fit w-56 shrink-0 lg:block">
+      <nav class="space-y-1">
+        <p class="px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">目录</p>
+        <a href="#overview" class="toc group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-600 transition hover:bg-indigo-50 hover:text-indigo-700">
+          <span class="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-xs font-semibold text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-600">1</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="layers" aria-hidden="true" class="lucide lucide-layers h-4 w-4 text-slate-400 group-hover:text-indigo-500"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"></path><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"></path><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"></path></svg>
+          <span class="font-medium">系统概览</span>
+        </a>
+        <a href="#arch" class="toc group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-600 transition hover:bg-indigo-50 hover:text-indigo-700">
+          <span class="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-xs font-semibold text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-600">2</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="network" aria-hidden="true" class="lucide lucide-network h-4 w-4 text-slate-400 group-hover:text-indigo-500"><rect x="16" y="16" width="6" height="6" rx="1"></rect><rect x="2" y="16" width="6" height="6" rx="1"></rect><rect x="9" y="2" width="6" height="6" rx="1"></rect><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"></path><path d="M12 12V8"></path></svg>
+          <span class="font-medium">系统架构</span>
+        </a>
+        <a href="#flow" class="toc group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-600 transition hover:bg-indigo-50 hover:text-indigo-700">
+          <span class="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-xs font-semibold text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-600">3</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="git-branch" aria-hidden="true" class="lucide lucide-git-branch h-4 w-4 text-slate-400 group-hover:text-indigo-500"><path d="M15 6a9 9 0 0 0-9 9V3"></path><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle></svg>
+          <span class="font-medium">核心流程</span>
+        </a>
+        <a href="#board" class="toc group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-600 transition hover:bg-indigo-50 hover:text-indigo-700">
+          <span class="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-xs font-semibold text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-600">4</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="calendar-range" aria-hidden="true" class="lucide lucide-calendar-range h-4 w-4 text-slate-400 group-hover:text-indigo-500"><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M16 2v4"></path><path d="M3 10h18"></path><path d="M8 2v4"></path><path d="M17 14h-6"></path><path d="M13 18H7"></path><path d="M7 14h.01"></path><path d="M17 18h.01"></path></svg>
+          <span class="font-medium">排课看板</span>
+        </a>
+        <a href="#manage" class="toc group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-600 transition hover:bg-indigo-50 hover:text-indigo-700">
+          <span class="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-xs font-semibold text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-600">5</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="layout-dashboard" aria-hidden="true" class="lucide lucide-layout-dashboard h-4 w-4 text-slate-400 group-hover:text-indigo-500"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg>
+          <span class="font-medium">班课管理</span>
+        </a>
+        <a href="#quickstart" class="toc group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-600 transition hover:bg-indigo-50 hover:text-indigo-700 bg-indigo-50 text-indigo-700">
+          <span class="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-xs font-semibold text-slate-500 group-hover:bg-indigo-100 group-hover:text-indigo-600">6</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="rocket" aria-hidden="true" class="lucide lucide-rocket h-4 w-4 text-slate-400 group-hover:text-indigo-500"><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09"></path><path d="M9 12a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.4 22.4 0 0 1-4 2z"></path><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 .05 5 .05"></path></svg>
+          <span class="font-medium">快速上手</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Content -->
+    <main class="min-w-0 flex-1 space-y-16">
+
+      <!-- 1. Overview -->
+      <section id="overview" class="scroll-mt-24">
+        <div class="border-b border-slate-200 pb-6">
+          <div class="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-indigo-600">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="layers" aria-hidden="true" class="lucide lucide-layers h-4 w-4"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"></path><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"></path><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"></path></svg> 01 · 系统概览
+          </div>
+          <h2 class="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">一个数据库底座，五大应用协同</h2>
+          <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">
+            系统的核心数据是「排课总台账」，排课看板与班课管理直接读写它；诊断课看板通过自动化从总台账同步、关键数据看板通过 API 从外部系统导入——五个应用共享同一套数据库。
+          </p>
+        </div>
+
+        <div class="mt-8 grid gap-4 sm:grid-cols-3">
+          <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-900 text-white">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="database" aria-hidden="true" class="lucide lucide-database h-5 w-5"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5V19A9 3 0 0 0 21 19V5"></path><path d="M3 12A9 3 0 0 0 21 12"></path></svg>
+            </div>
+            <h3 class="mt-4 text-base font-semibold text-slate-900">排课总台账</h3>
+            <p class="mt-1 text-sm leading-relaxed text-slate-500">系统的数据底座。每一条记录代表一次课或一个事项，包含学生、年级、日期、时段、教室、老师等完整信息。</p>
+            <span class="mt-3 inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">数据层</span>
+          </div>
+          <div class="rounded-xl border border-indigo-200 bg-indigo-50/40 p-5 shadow-sm">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-600 text-white">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="calendar-range" aria-hidden="true" class="lucide lucide-calendar-range h-5 w-5"><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M16 2v4"></path><path d="M3 10h18"></path><path d="M8 2v4"></path><path d="M17 14h-6"></path><path d="M13 18H7"></path><path d="M7 14h.01"></path><path d="M17 18h.01"></path></svg>
+            </div>
+            <h3 class="mt-4 text-base font-semibold text-slate-900">排课看板</h3>
+            <p class="mt-1 text-sm leading-relaxed text-slate-500">以「周 × 教室 × 时段」网格直观呈现课表，支持添加课程、新增事项、快速查看本周排期等。</p>
+            <span class="mt-3 inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-medium text-indigo-700">操作视图</span>
+          </div>
+          <div class="rounded-xl border border-emerald-200 bg-emerald-50/40 p-5 shadow-sm">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-600 text-white">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="layout-dashboard" aria-hidden="true" class="lucide lucide-layout-dashboard h-5 w-5"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg>
+            </div>
+            <h3 class="mt-4 text-base font-semibold text-slate-900">班课管理</h3>
+            <p class="mt-1 text-sm leading-relaxed text-slate-500">聚焦长期班的生命周期管理，提供开班统计、多维筛选、一键复制与批量导入。</p>
+            <span class="mt-3 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">管理视图</span>
+          </div>
+        </div>
+
+        <div class="mt-6 rounded-xl border border-slate-200 bg-white p-5">
+          <p class="text-sm font-medium text-slate-700">数据流向</p>
+          <div class="mt-4 flex flex-wrap items-center gap-3 text-sm">
+            <span class="rounded-lg bg-slate-900 px-3 py-1.5 font-medium text-white">排课总台账</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="chevron-right" aria-hidden="true" class="lucide lucide-chevron-right h-4 w-4 text-slate-400"><path d="m9 18 6-6-6-6"></path></svg>
+            <span class="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 font-medium text-indigo-700">排课看板 · 按周网格展示</span>
+            <span class="text-slate-300">|</span>
+            <span class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-medium text-emerald-700">班课管理 · 按班课聚合</span>
+          </div>
+          <p class="mt-4 text-xs leading-relaxed text-slate-500">排课看板与班课管理直接读写排课总台账；此外，诊断课台账由排课总台账自动同步、班课数据台账由外部系统 API 导入，分别支撑诊断课看板与关键数据看板（详见下方架构图）。</p>
+        </div>
+      </section>
+
+      <!-- 2. Architecture -->
+      <section id="arch" class="scroll-mt-24">
+        <div class="border-b border-slate-200 pb-6">
+          <div class="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-indigo-600">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="network" aria-hidden="true" class="lucide lucide-network h-4 w-4"><rect x="16" y="16" width="6" height="6" rx="1"></rect><rect x="2" y="16" width="6" height="6" rx="1"></rect><rect x="9" y="2" width="6" height="6" rx="1"></rect><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"></path><path d="M12 12V8"></path></svg> 02 · 系统架构
+          </div>
+          <h2 class="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">架构与数据模型</h2>
+          <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">五个 Next.js 应用架在数据库（Teable 多维表格）底座之上，整体调用关系如下。</p>
+        </div>
+
+        <div class="mt-8">
+          <div class="diagram arch-zoom" id="archDiagram" role="button" tabindex="0" aria-label="点击放大查看架构图" title="点击放大查看">
+            <pre class="mermaid">
+flowchart TD
+    subgraph L1["使用者"]
+        direction LR
+        U2["教务 顾问"]
+        U1["教师"]:::core
+        U3["管理者"]
+    end
+
+    subgraph L2["应用"]
+        direction LR
+        A2["班课管理"]
+        A1["排课看板"]:::core
+        A3["诊断课看板"]
+        A4["关键数据看板"]
+    end
+
+    subgraph L3["数据库"]
+        direction LR
+        D2["诊断课台账"]
+        D1["排课总台账"]:::core
+        D3["班课数据台账"]
+    end
+
+    EXT["外部业务系统"]
+
+    U1 --> A1
+    U2 --> A1
+    U2 --> A2
+    U3 --> A1
+    U3 --> A3
+    U3 --> A4
+    U1 --> A3
+
+    A1 <--> D1
+    A2 <--> D1
+    A3 --> D2
+    A4 --> D3
+
+    D1 -.自动化.-> D2
+    EXT -.API.-> D3
+
+    classDef core fill:#4f46e5,color:#fff,stroke:#4338ca,stroke-width:3px,font-weight:bold
+    classDef anno fill:none,stroke:none,color:#64748b,font-size:10px
+    style L1 fill:#ffffff,stroke:#94a3b8,stroke-width:1px
+    style L2 fill:#ffffff,stroke:#94a3b8,stroke-width:1px
+    style L3 fill:#ffffff,stroke:#94a3b8,stroke-width:1px
+</pre>
+          </div>
+          <p class="mt-2 flex items-center justify-center gap-1.5 text-xs text-slate-400"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="zoom-in" aria-hidden="true" class="h-3.5 w-3.5"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path><path d="M11 8v6"></path><path d="M8 11h6"></path></svg> 点击架构图可放大查看</p>
+        </div>
+
+      </section>
+
+      <!-- 3. Flow -->
+      <section id="flow" class="scroll-mt-24">
+        <div class="border-b border-slate-200 pb-6">
+          <div class="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-indigo-600">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="git-branch" aria-hidden="true" class="lucide lucide-git-branch h-4 w-4"><path d="M15 6a9 9 0 0 0-9 9V3"></path><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle></svg> 03 · 核心流程
+          </div>
+          <h2 class="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">从课程新增到全员同步</h2>
+          <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">一次排课（无论手动单课、批量 / 模板导入，还是外部 API 推送）背后，服务端、台账与看板如何协作、同步。</p>
+        </div>
+
+        <h3 class="mt-8 text-lg font-semibold text-slate-900">一次排课的处理逻辑（从填写到广播成功）</h3>
+        <p class="mt-1 text-sm text-slate-500">下图按纵向顺序还原一次排课的完整处理逻辑：最上方是用户填写表单，向下依次经过提交、前端与服务端校验、写入排课总台账、自动化按类型分发，最下方是变更广播成功、各看板即时刷新。校验不通过或教室时段冲突时会回路重填。</p>
+        <div class="mt-4 diagram arch-zoom" id="flowDiagram" role="button" tabindex="0" aria-label="点击放大查看流程图" title="点击放大查看">
+          <pre class="mermaid">
+flowchart TD
+    A["① 用户填写排课表单<br/>学生 · 教师 · 教室 · 时段 · 课程类型 · 主题"] --> B["② 点击「保存」提交"]
+    B --> C{"③ 前端校验<br/>必填 / 格式正确？"}
+    C -->|否| D["标红提示，请修改后重提"]
+    D --> A
+    C -->|是| E["④ 发送 POST 排课请求<br/>→ 服务端 API"]
+    E --> F{"⑤ 服务端冲突校验<br/>同教室 + 同时段？"}
+    F -->|冲突| G["返回 409 · 提示「教室此时段已占用」"]
+    G --> B
+    F -->|无冲突| H["⑥ INSERT 创建记录<br/>排课总台账新增一行"]
+    H --> I["⑦ 返回成功 · 提示「排课成功，已同步全员」"]
+    I --> J["⑧ 服务端投递变更事件<br/>→ 自动化引擎"]
+    J --> K{"⑨ 按课程类型路由"}
+    K -->|诊断课| L["自动同步 → 诊断课台账"]
+    K -->|长期班 / 其他| M["API 导入 → 班课数据台账"]
+    L --> N["⑩ 广播变更<br/>实时订阅 / WebSocket"]
+    M --> N
+    N --> O["⑪ 各看板即时刷新<br/>排课看板 · 诊断课看板 · 关键数据看板"]
+    O --> P["✓ 广播成功"]
+    classDef step fill:#eef2ff,stroke:#6366f1,color:#3730a3;
+    classDef chk fill:#fffbeb,stroke:#f59e0b,color:#92400e;
+    classDef wr fill:#f0fdf4,stroke:#10b981,color:#065f46;
+    classDef sync fill:#f8fafc,stroke:#94a3b8,color:#334155;
+    class A,B,E,I,J step;
+    class C,F,K chk;
+    class H,L,M,P wr;
+    class N,O sync;
+          </pre>
+        </div>
+        <p class="mt-2 flex items-center justify-center gap-1.5 text-xs text-slate-400"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="zoom-in" aria-hidden="true" class="h-3.5 w-3.5"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path><path d="M11 8v6"></path><path d="M8 11h6"></path></svg> 点击流程图可放大查看</p>
+</section>
+
+      <!-- 4. Board -->
+      <section id="board" class="scroll-mt-24">
+        <div class="border-b border-slate-200 pb-6">
+          <div class="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-indigo-600">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="calendar-range" aria-hidden="true" class="lucide lucide-calendar-range h-4 w-4"><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M16 2v4"></path><path d="M3 10h18"></path><path d="M8 2v4"></path><path d="M17 14h-6"></path><path d="M13 18H7"></path><path d="M7 14h.01"></path><path d="M17 18h.01"></path></svg> 04 · 排课看板
+          </div>
+          <h2 class="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">排课看板</h2>
+          <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">以「星期 × 时段 × 教室」三维网格呈现一周排课，一眼掌握校区每日每教室的占用情况，解决教务排课上的各种痛点，在排课端解放生产力。</p>
+        </div>
+
+        <div class="mt-8 grid gap-4 md:grid-cols-2">
+          <div class="rounded-xl border border-slate-200 bg-white p-5">
+            <div class="flex items-center gap-2"><div class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="layers" aria-hidden="true" class="lucide lucide-layers h-5 w-5"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"></path><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"></path><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"></path></svg></div><h3 class="text-base font-semibold">校区排课总览</h3></div>
+            <p class="mt-3 text-sm leading-relaxed text-slate-500">顶部展示「本周」日期范围，并按天显示当日课程数，快速了解本周整体排课密度。</p>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-white p-5">
+            <div class="flex items-center gap-2"><div class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="calendar-range" aria-hidden="true" class="lucide lucide-calendar-range h-5 w-5"><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M16 2v4"></path><path d="M3 10h18"></path><path d="M8 2v4"></path><path d="M17 14h-6"></path><path d="M13 18H7"></path><path d="M7 14h.01"></path><path d="M17 18h.01"></path></svg></div><h3 class="text-base font-semibold">周课表网格</h3></div>
+            <p class="mt-3 text-sm leading-relaxed text-slate-500">时间轴课表：纵轴为时间（08:00–20:00），横轴为教室1 至 教室4。每节课按开始时间自动定位到对应位置，卡片高度代表课时长短。</p>
+          </div>
+        </div>
+
+        <!-- 排课看板展示 -->
+        <div class="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <div class="border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-medium text-slate-500">排课看板展示</div>
+          <div class="p-3">
+            <iframe
+              src="https://appwnlhqc9sifcf8gkd.yach-teable-v0.app/?startDate=2026-07-27"
+              title="排课看板展示"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              allow="clipboard-read; clipboard-write; fullscreen"
+              style="width:100%;height:640px;border:0;border-radius:12px;display:block;"></iframe>
+          </div>
+        </div>
+
+        <h3 class="mt-10 text-lg font-semibold text-slate-900">核心操作</h3>
+        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+          <div class="rounded-xl border border-slate-200 bg-white p-5">
+            <div class="flex items-center gap-3"><div class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-white"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="plus" aria-hidden="true" class="lucide lucide-plus h-5 w-5"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></div>
+              <div><p class="text-sm font-semibold">编辑课程</p><p class="text-xs text-slate-400">为指定教室、时段排入一节课</p></div></div>
+            <p class="mt-3 text-sm leading-relaxed text-slate-500">点击时间轴上任意位置，系统按点击时间预填开始时间，填写学生、教室、类型后保存，课程卡片即自动定位到时间轴对应刻度；点击已有卡片可再次编辑或删除。</p>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-white p-5">
+            <div class="flex items-center gap-3"><div class="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-white"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="book-open" aria-hidden="true" class="lucide lucide-book-open h-5 w-5"><path d="M12 5v16"></path><path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z"></path></svg></div>
+              <div><p class="text-sm font-semibold">新增事项</p><p class="text-xs text-slate-400">排入非课程性质的公共/个人事项</p></div></div>
+            <p class="mt-3 text-sm leading-relaxed text-slate-500">选择「全体事项 / 个人事项」，可排入备课、家长会、请假等非授课安排，同样按时间定位在时间轴上，一目了然。</p>
+          </div>
+        </div>
+
+        <h3 class="mt-10 text-lg font-semibold text-slate-900">使用流程</h3>
+        <ol class="mt-4 space-y-3">
+          <li class="flex gap-4 rounded-xl border border-slate-200 bg-white p-4"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white">1</span><div><p class="text-sm font-semibold text-slate-900">查看本周排课</p><p class="mt-0.5 text-sm leading-relaxed text-slate-500">打开看板，顶部自动定位到当前周，直观浏览每日每教室的排课密度。</p></div></li>
+          <li class="flex gap-4 rounded-xl border border-slate-200 bg-white p-4"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white">2</span><div><p class="text-sm font-semibold text-slate-900">识别空位 / 冲突</p><p class="mt-0.5 text-sm leading-relaxed text-slate-500">通过网格空白格快速发现可用时段，通过卡片颜色识别课程类型。</p></div></li>
+            <p class="mt-0.5 text-sm leading-relaxed text-slate-500">打开看板，选择日期后查看当天时间轴；点击轨道上对应时间排课，卡片即自动定位，调整开始 / 结束时间会实时移动。</p>
+            <p class="mt-0.5 text-sm leading-relaxed text-slate-500">时间轴上的卡片位置即代表当前所处时段，沿轴浏览即可快速定位进行中的课程。</p>
+        </ol>
+      </section>
+
+      <!-- 5. Manage -->
+      <section id="manage" class="scroll-mt-24">
+        <div class="border-b border-slate-200 pb-6">
+          <div class="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-indigo-600">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="layout-dashboard" aria-hidden="true" class="lucide lucide-layout-dashboard h-4 w-4"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg> 05 · 班课管理
+          </div>
+          <h2 class="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">班课管理</h2>
+          <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">聚焦班课管理，提供开班导入、班课统计、多维筛选、一键复制与批量导入。</p>
+        </div>
+
+        <!-- 班课管理展示 -->
+        <div class="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <div class="border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-medium text-slate-500">班课管理展示</div>
+          <div class="p-3">
+            <iframe
+              src="https://apphkqncb1jgvxruhw8.yach-teable-v0.app/"
+              title="班课管理展示"
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              allow="clipboard-read; clipboard-write; fullscreen"
+              style="width:100%;height:640px;border:0;border-radius:12px;display:block;"></iframe>
+          </div>
+        </div>
+
+
+        <h3 class="mt-10 text-lg font-semibold text-slate-900">核心操作</h3>
+        <div class="mt-4 grid gap-4 md:grid-cols-3">
+          <div class="rounded-xl border border-slate-200 bg-white p-5"><div class="flex items-center gap-3"><div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-white"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="plus" aria-hidden="true" class="lucide lucide-plus h-5 w-5"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></div><div><p class="text-sm font-semibold">新增班课</p></div></div><p class="mt-3 text-sm leading-relaxed text-slate-500">手动创建一个长期班，填写学生、年级、日期、时段等信息，保存后进入班课列表与统计。</p></div>
+          <div class="rounded-xl border border-slate-200 bg-white p-5"><div class="flex items-center gap-3"><div class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-white"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="download" aria-hidden="true" class="lucide lucide-download h-5 w-5"><path d="M12 15V3"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="m7 10 5 5 5-5"></path></svg></div><div><p class="text-sm font-semibold">模板导入</p></div></div><p class="mt-3 text-sm leading-relaxed text-slate-500">适用于整班批量建课场景。一次导入多名学生的长期班排期，自动写入排课总台账。</p></div>
+          <div class="rounded-xl border border-slate-200 bg-white p-5"><div class="flex items-center gap-3"><div class="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-white"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="copy" aria-hidden="true" class="lucide lucide-copy h-5 w-5"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></div><div><p class="text-sm font-semibold">复制课程</p></div></div><p class="mt-3 text-sm leading-relaxed text-slate-500">在课程卡片上右键，选择复制后在编辑界面确认修改并保存，即可快速生成一节相似的新课。</p></div>
+        </div>
+
+      </section>
+
+      <!-- 6. Quick start -->
+      <section id="quickstart" class="scroll-mt-24">
+        <div class="border-b border-slate-200 pb-6">
+          <div class="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-indigo-600">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="rocket" aria-hidden="true" class="lucide lucide-rocket h-4 w-4"><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09"></path><path d="M9 12a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.4 22.4 0 0 1-4 2z"></path><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 .05 5 .05"></path></svg> 06 · 快速上手
+          </div>
+          <h2 class="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">三步开始排课</h2>
+          <p class="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">从零到完成第一次排课的最短路径。</p>
+        </div>
+
+        <div class="mt-8 space-y-4">
+          <div class="flex gap-4 rounded-xl border border-slate-200 bg-white p-5"><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="plus" aria-hidden="true" class="lucide lucide-plus h-5 w-5"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg></div><div><p class="text-base font-semibold text-slate-900">第一步 · 新增一条排课记录</p><p class="mt-1 text-sm leading-relaxed text-slate-500">在排课看板点击「日历空白处」，或在班课管理点击「新增班课 / 导入长期班」。填写学生、年级、日期、时段、教室、老师等关键信息。</p></div></div>
+          <div class="flex gap-4 rounded-xl border border-slate-200 bg-white p-5"><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="calendar-range" aria-hidden="true" class="lucide lucide-calendar-range h-5 w-5"><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M16 2v4"></path><path d="M3 10h18"></path><path d="M8 2v4"></path><path d="M17 14h-6"></path><path d="M13 18H7"></path><path d="M7 14h.01"></path><path d="M17 18h.01"></path></svg></div><div><p class="text-base font-semibold text-slate-900">第二步 · 在看板核对排期</p><p class="mt-1 text-sm leading-relaxed text-slate-500">回到排课看板，确认课程卡片落在正确的「周 × 时段 × 教室」网格中。如需调整，编辑该记录的日期/时段/教室即可，网格会实时更新。</p></div></div>
+          <div class="flex gap-4 rounded-xl border border-slate-200 bg-white p-5"><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500 text-white"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="layout-dashboard" aria-hidden="true" class="lucide lucide-layout-dashboard h-5 w-5"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg></div><div><p class="text-base font-semibold text-slate-900">第三步 · 在班课管理跟踪状态</p><p class="mt-1 text-sm leading-relaxed text-slate-500">长期班会自动进入班课管理列表，通过筛选查看开班、授课、结课状态，统计卡片实时反映整体进度。</p></div></div>
+        </div>
+
+        <div class="mt-8 grid gap-4 md:grid-cols-2">
+          <div class="rounded-xl border border-indigo-200 bg-indigo-50/40 p-5">
+            <div class="flex items-center gap-2 text-indigo-700"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="calendar-range" aria-hidden="true" class="lucide lucide-calendar-range h-5 w-5"><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M16 2v4"></path><path d="M3 10h18"></path><path d="M8 2v4"></path><path d="M17 14h-6"></path><path d="M13 18H7"></path><path d="M7 14h.01"></path><path d="M17 18h.01"></path></svg><span class="text-sm font-semibold">什么时候用 排课看板？</span></div>
+            <ul class="mt-3 space-y-1.5 text-sm text-slate-600"><li>· 想直观查看某周某教室的排课</li><li>· 需要快速新增单次课程或事项</li><li>· 排查教室 / 时段冲突</li></ul>
+          </div>
+          <div class="rounded-xl border border-emerald-200 bg-emerald-50/40 p-5">
+            <div class="flex items-center gap-2 text-emerald-700"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-lucide="layout-dashboard" aria-hidden="true" class="lucide lucide-layout-dashboard h-5 w-5"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg><span class="text-sm font-semibold">什么时候用 班课管理？</span></div>
+            <ul class="mt-3 space-y-1.5 text-sm text-slate-600"><li>· 统计开班 / 授课 / 结课数量</li><li>· 按年级、学期、状态筛选长期班</li><li>· 批量导入或复制相似课程</li></ul>
+          </div>
+        </div>
+      </section>
+
+      <footer class="border-t border-slate-200 pt-8">
+        <p class="text-center text-sm font-semibold text-slate-900">校区排课系统 · 设计展示</p>
+      </footer>
+    </main>
+  </div>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: "neutral" });
+lucide.createIcons();
+
+
+/* 架构图/流程图点击放大查看 */
+(function(){
+  function getSvgNaturalSize(svg){
+    // 优先读取 viewBox（最可靠），其次读取 width/height 像素值，最后回退到渲染尺寸
+    var vb = svg.viewBox && svg.viewBox.baseVal;
+    if(vb && vb.width>0 && vb.height>0){
+      return {w: vb.width, h: vb.height};
+    }
+    var wAttr = svg.getAttribute("width")||"";
+    var hAttr = svg.getAttribute("height")||"";
+    if(wAttr && hAttr && wAttr.indexOf("%")===-1 && hAttr.indexOf("%")===-1){
+      var w = parseFloat(wAttr), h = parseFloat(hAttr);
+      if(w>0 && h>0) return {w:w, h:h};
+    }
+    var rect = svg.getBoundingClientRect();
+    return {w: rect.width, h: rect.height};
+  }
+
+  function openLightbox(svg){
+    if(!svg) return;
+    const lb=document.createElement("div"); lb.className="lightbox";
+    const tip=document.createElement("div"); tip.className="lb-tip"; tip.textContent="点击任意处关闭 · 可滚动查看";
+    const wrap=document.createElement("div"); wrap.className="lb-wrap";
+    const clone=svg.cloneNode(true);
+
+    // 自动放大到一个"合适尺寸"：宽度尽量接近 80vw 但不超过 2 倍原始尺寸，便于一眼看清，同时不全屏铺满
+    const pad=80;
+    const availW=window.innerWidth - pad;
+    const availH=window.innerHeight - pad;
+    const size=getSvgNaturalSize(svg);
+    if(size.w>0 && size.h>0){
+      const scaleByW = Math.min(availW / size.w, 2);
+      const scaleByH = Math.min(availH / size.h, scaleByW);
+      const scale = Math.max(1, scaleByH);
+      const finalW=Math.round(size.w*scale);
+      const finalH=Math.round(size.h*scale);
+      clone.setAttribute("width", finalW);
+      clone.setAttribute("height", finalH);
+      clone.style.display="block";
+      wrap.style.width=finalW+"px";
+    } else {
+      wrap.style.width="80vw";
+    }
+
+    wrap.appendChild(clone);
+    lb.appendChild(tip); lb.appendChild(wrap);
+    function close(){ if(lb.parentNode){ lb.parentNode.removeChild(lb); } document.removeEventListener("keydown", onKey); }
+    function onKey(e){ if(e.key==="Escape"){ close(); } }
+    lb.addEventListener("click", close);
+    document.addEventListener("keydown", onKey);
+    document.body.appendChild(lb);
+  }
+  document.querySelectorAll(".arch-zoom").forEach(function(el){
+    el.addEventListener("click", function(){ openLightbox(el.querySelector("svg")); });
+    el.addEventListener("keydown", function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); openLightbox(el.querySelector("svg")); } });
+  });
+})();
+
+/* 侧栏高亮 */
+const tocs = document.querySelectorAll(".toc");
+window.addEventListener("scroll", ()=>{
+  let cur = "";
+  document.querySelectorAll("section[id]").forEach(s=>{ if(scrollY >= s.offsetTop - 120) cur = s.id; });
+  tocs.forEach(a=>a.classList.toggle("bg-indigo-50", a.getAttribute("href") === "#"+cur));
+  tocs.forEach(a=>a.classList.toggle("text-indigo-700", a.getAttribute("href") === "#"+cur));
+});
+</script>
+
+  <!-- ===== 编辑工具条（导出时自动移除，不进最终文件） ===== -->
+  
+
+  
+
+
+<div class="mermaidTooltip" style="opacity: 0;"></div></body></html>
