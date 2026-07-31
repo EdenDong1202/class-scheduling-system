@@ -38,7 +38,7 @@ flowchart TB
     subgraph APPS["🖥 五个 Web 应用（Next.js · Teable AI 生成）"]
         direction LR
         A1["📅 排课看板<br/>所有人使用 · 核心"]
-        A2["🏫 班课管理<br/>教务 & 顾问"]
+        A2["🏫 班课管理<br/>教务 顾问"]
         A3["🩺 诊断课看板<br/>所有人使用"]
         A4["📊 关键数据看板<br/>管理者"]
         A5["📖 产品说明书<br/>新员工"]
@@ -111,7 +111,7 @@ erDiagram
     PAIKE_LEDGER["排课总台账"] {
         text 学生 "主键字段"
         select 年级 "一年级~初二"
-        select 课程类型 "诊断课/小灶课/长期班/短期班/全体事项/个人事项"
+        select 课程类型 "长期班/试听班/测试课/全体事项/个人事项"
         select 老师 "教师1~3（模板化）"
         date 日期 "YYYY-MM-DD"
         select 时段 "A~E段 + 周末S段，共9个固定时段"
