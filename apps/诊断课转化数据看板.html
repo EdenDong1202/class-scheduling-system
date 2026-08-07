@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>诊断课转化数据看板</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#f2f3f5; font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:#1f2329; }
+  .page { width:1240px; margin:0 auto; padding:28px 0 40px; }
+  .head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px; }
+  .head h1 { font-size:20px; font-weight:700; }
+  .head .sub { font-size:12px; color:#8a919f; margin-top:6px; }
+  .date-chip { font-size:12px; color:#8a919f; background:#eef0f3; border-radius:4px; padding:5px 10px; margin-top:4px; }
+  .sec { font-size:12px; color:#8a919f; margin:22px 0 10px; }
+  .card { background:#fff; border:1px solid #e8eaee; border-radius:8px; }
+  .card .ct { font-size:12px; color:#8a919f; padding:12px 16px 0; }
+  /* top stats */
+  .stats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+  .stat { background:#f7f8fa; border:1px solid #e8eaee; border-radius:8px; padding:14px 18px; }
+  .stat .lb { font-size:12px; color:#8a919f; }
+  .stat .vl { font-size:26px; font-weight:700; margin-top:8px; }
+  .vl.blue { color:#2b6de8; } .vl.green { color:#16a34a; }
+  /* row2 */
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
+  .donut-wrap { display:flex; justify-content:center; align-items:center; padding:18px 0 14px; position:relative; }
+  .donut-center { position:absolute; text-align:center; }
+  .donut-center .p { font-size:22px; font-weight:700; }
+  .donut-center .s { font-size:11px; color:#8a919f; margin-top:2px; }
+  .legend { display:flex; justify-content:center; gap:12px; padding:0 0 14px; font-size:11px; color:#565d68; flex-wrap:wrap; }
+  .legend i { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:4px; }
+  /* month card */
+  .month { margin-top:14px; padding:14px 18px; display:flex; justify-content:space-between; align-items:center; }
+  .month .lb { font-size:12px; color:#8a919f; }
+  .month .lb a { color:#2b6de8; text-decoration:none; margin-left:6px; }
+  .month .big { font-size:30px; font-weight:800; color:#f59e0b; margin-top:6px; }
+  .month .big small { font-size:14px; font-weight:700; }
+  .month .mid { font-size:12px; color:#8a919f; margin-left:14px; }
+  .month .right { text-align:right; border-left:1px solid #e8eaee; padding-left:22px; }
+  .month .right .t { font-size:11px; color:#8a919f; }
+  .month .right .v { font-size:16px; font-weight:700; margin-top:4px; }
+  .month .right .d { margin-top:6px; font-size:11px; color:#565d68; }
+  /* trend */
+  .trend-meta { display:flex; gap:26px; align-items:center; font-size:12px; color:#565d68; padding:14px 18px 4px; flex-wrap:wrap; }
+  .trend-meta b { color:#1f2329; }
+  .trend-meta .peak b { color:#f59e0b; }
+  .trend-meta .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#f59e0b; margin-right:5px; }
+  #trendchart { width:100%; height:220px; display:block; padding:6px 10px 12px; }
+  /* table */
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; font-size:12px; color:#8a919f; font-weight:400; padding:12px 18px; border-bottom:1px solid #eef0f3; }
+  td { padding:13px 18px; border-bottom:1px solid #f2f3f5; color:#1f2329; }
+  th.num, td.num { text-align:right; }
+  th:first-child, td:first-child { text-align:left; }
+  .ratecell { display:flex; align-items:center; justify-content:flex-end; gap:10px; }
+  .track { position:relative; width:110px; height:6px; background:#eef0f3; border-radius:3px; }
+  .track .fill { position:absolute; left:0; top:0; height:6px; border-radius:3px; }
+  .track .mark { position:absolute; top:-3px; width:2px; height:12px; background:#c3c8d1; }
+  .pct { width:52px; text-align:right; font-size:12px; font-weight:600; }
+  .pct.g { color:#16a34a; } .pct.r { color:#ef4444; } .pct.mut { color:#8a919f; }
+  .tnote { font-size:11px; color:#8a919f; padding:10px 18px 14px; }
+  /* grade detail */
+  .grade { padding:0 0 16px; margin-bottom:16px; }
+  .ghead { display:flex; justify-content:space-between; align-items:center; padding:14px 18px; }
+  .ghead .gn { font-size:15px; font-weight:700; }
+  .ghead .gm { font-size:12px; color:#8a919f; display:flex; align-items:center; gap:10px; }
+  .ghead .gm .pct { font-weight:700; }
+  .tgrid { display:grid; grid-template-columns:1fr 1fr; gap:14px; padding:0 18px; }
+  .tcard { background:#f7f8fa; border:1px solid #eef0f3; border-radius:8px; padding:16px; }
+  .tcard .top { display:flex; justify-content:space-between; font-size:14px; font-weight:700; }
+  .tcard .top .rp { font-size:16px; }
+  .rp.g { color:#16a34a; } .rp.o { color:#f59e0b; } .rp.r { color:#ef4444; }
+  .tbody { display:flex; gap:16px; margin-top:14px; align-items:center; }
+  .dwrap { position:relative; width:96px; height:96px; flex:none; }
+  .dcenter { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .dcenter .p { font-size:14px; font-weight:700; }
+  .dcenter .s { font-size:10px; color:#8a919f; margin-top:2px; }
+  .rows { flex:1; }
+  .rline { display:flex; justify-content:space-between; background:#fff; border:1px solid #eef0f3; border-radius:4px; padding:6px 12px; margin-bottom:6px; font-size:12px; }
+  .rline .k { color:#8a919f; } .rline .v { font-weight:700; }
+  .sparkbox { width:150px; flex:none; }
+  .tags { margin-top:12px; display:flex; align-items:center; }
+  .tag { font-size:11px; color:#565d68; }
+  .tag + .tag::before { content:"·"; margin:0 6px; color:#c3c8d1; }
+  .tmore { text-align:right; margin-top:10px; }
+  .tmore a { font-size:12px; color:#2b6de8; text-decoration:none; }
+  .empty { font-size:12px; color:#8a919f; padding:6px 18px 10px; }
+  /* teacher detail */
+  .tlinks { display:flex; gap:26px; font-size:12px; color:#565d68; flex-wrap:wrap; margin-bottom:12px; }
+  .tlinks a { color:#2b6de8; text-decoration:none; margin-left:6px; }
+  .charts { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .hbar { display:flex; align-items:center; margin:13px 0; }
+  .hbar .nm { width:64px; text-align:right; font-size:12px; color:#565d68; flex:none; }
+  .hbar .area { flex:1; margin-left:12px; position:relative; height:16px; }
+  .hbar .bar { position:absolute; left:0; top:0; height:16px; border-radius:3px; }
+  .hbar .bv { margin-left:8px; font-size:11px; font-weight:700; position:absolute; top:2px; }
+  .axis { display:flex; margin-left:76px; border-top:1px solid #eef0f3; padding-top:6px; margin-top:4px; }
+  .axis span { flex:1; font-size:10px; color:#8a919f; }
+  .cfoot { font-size:11px; color:#8a919f; margin-top:14px; }
+  .bg-green { background:#22c55e; } .bg-orange { background:#f59e0b; } .bg-blue { background:#3b82f6; } .bg-red { background:#ef4444; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="head">
+    <div>
+      <h1>诊断课转化数据看板</h1>
+      <div class="sub">数据实时来自 Teable · 每次访问同步最新数据</div>
+    </div>
+    <div class="date-chip">2026年8月7日</div>
+  </div>
+
+  <div class="sec">总校整体汇总</div>
+  <div class="stats">
+    <div class="stat"><div class="lb">诊断总人数</div><div class="vl">412</div></div>
+    <div class="stat"><div class="lb">诊断过线人数</div><div class="vl blue">339</div></div>
+    <div class="stat"><div class="lb">已缴费人次</div><div class="vl green">243</div></div>
+  </div>
+
+  <div class="row2">
+    <div class="card">
+      <div class="ct">整体转化率</div>
+      <div class="donut-wrap">
+        <svg width="150" height="150" viewBox="0 0 150 150">
+          <circle cx="75" cy="75" r="56" fill="none" stroke="#e5e7eb" stroke-width="16"/>
+          <circle class="donut" data-pct="71.7" data-color="#f59e0b" cx="75" cy="75" r="56" fill="none" stroke-width="16" stroke-linecap="butt" transform="rotate(-90 75 75)"/>
+        </svg>
+        <div class="donut-center"><div class="p" style="color:#f59e0b">71.7%</div><div class="s">243 / 339 人次</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">各班状态分布</div>
+      <div class="donut-wrap" style="padding-bottom:6px;">
+        <svg id="statusdonut" width="150" height="150" viewBox="0 0 150 150"></svg>
+      </div>
+      <div class="legend">
+        <span><i style="background:#22c55e"></i>已缴费</span>
+        <span><i style="background:#ef4444"></i>拒绝</span>
+        <span><i style="background:#6b7280"></i>无法导到</span>
+        <span><i style="background:#3b82f6"></i>已导到</span>
+        <span><i style="background:#f97316"></i>暂未导到</span>
+        <span><i style="background:#1f2937"></i>未填写</span>
+        <span><i style="background:#f59e0b"></i>未排期</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card month">
+    <div style="display:flex;align-items:center;">
+      <div>
+        <div class="lb">本月诊断转化率<a href="javascript:void(0)">查看详情 →</a></div>
+        <div class="big">66.7<small>%</small><span class="mid">4 / 5 &nbsp;班数 / 有效诊断</span></div>
+      </div>
+    </div>
+    <div class="right">
+      <div class="t">上月</div>
+      <div class="v">58.9%</div>
+      <div class="d">↑7.8pp</div>
+    </div>
+  </div>
+
+  <div class="sec">诊断人数趋势</div>
+  <div class="card">
+    <div class="trend-meta">
+      <span>统计月数：<b>14 个月</b></span>
+      <span>起始月：<b>2025年7月</b></span>
+      <span>最近月：<b>2026年8月</b></span>
+      <span class="peak"><span class="dot"></span>峰值月：<b>2026年7月&nbsp; 96 人次</b></span>
+    </div>
+    <svg id="trendchart" viewBox="0 0 1180 210"></svg>
+  </div>
+
+  <div class="sec">年级总览</div>
+  <div class="card">
+    <table>
+      <thead><tr>
+        <th style="width:26%">年级</th>
+        <th class="num" style="width:18%">诊断人数</th>
+        <th class="num" style="width:20%">诊断过线人数</th>
+        <th class="num" style="width:18%">已缴费人次</th>
+        <th class="num" style="width:18%">转化率</th>
+      </tr></thead>
+      <tbody id="gradetable"></tbody>
+    </table>
+    <div class="tnote">色条标准：分校整体转化率 71.7%，高于整体绿色，低于整体红色 | 竖线标记整体转化率基准位置</div>
+  </div>
+
+  <div class="sec">年级详情</div>
+
+  <!-- 27 -->
+  <div class="card grade">
+    <div class="ghead">
+      <div class="gn">年级A</div>
+      <div class="gm">诊断 108 人 · 诊断过线 89 · 已缴费 67
+        <span class="track" style="width:70px"><span class="fill bg-green" style="width:75.3%"></span><span class="mark" style="left:71.7%"></span></span>
+        <span class="pct g">75.3%</span></div>
+    </div>
+    <div class="tgrid">
+      <div class="tcard">
+        <div class="top"><span>老师A</span><span class="rp g">74.5%</span></div>
+        <div class="tbody">
+          <div class="dwrap">
+            <svg width="96" height="96" viewBox="0 0 96 96">
+              <circle cx="48" cy="48" r="36" fill="none" stroke="#e5e7eb" stroke-width="11"/>
+              <circle class="donut" data-pct="74.5" data-color="#22c55e" cx="48" cy="48" r="36" fill="none" stroke-width="11" transform="rotate(-90 48 48)"/>
+            </svg>
+            <div class="dcenter"><div class="p" style="color:#16a34a">74.5%</div><div class="s">35/47</div></div>
+          </div>
+          <div class="rows">
+            <div class="rline"><span class="k">诊断</span><span class="v">56</span></div>
+            <div class="rline"><span class="k">诊断过线</span><span class="v">47</span></div>
+            <div class="rline"><span class="k">已缴费</span><span class="v">35</span></div>
+          </div>
+          <div class="sparkbox"><svg class="spark" data-vals="92,85,100" width="150" height="72"></svg></div>
+        </div>
+        <div class="tags"><span class="tag">S+-6</span><span class="tag">S-3</span><span class="tag">A+-18</span><span class="tag">A-5</span></div>
+        <div class="tmore"><a href="javascript:void(0)">查看详情 →</a></div>
+      </div>
+      <div class="tcard">
+        <div class="top"><span>老师B</span><span class="rp g">76.2%</span></div>
+        <div class="tbody">
+          <div class="dwrap">
+            <svg width="96" height="96" viewBox="0 0 96 96">
+              <circle cx="48" cy="48" r="36" fill="none" stroke="#e5e7eb" stroke-width="11"/>
+              <circle class="donut" data-pct="76.2" data-color="#22c55e" cx="48" cy="48" r="36" fill="none" stroke-width="11" transform="rotate(-90 48 48)"/>
+            </svg>
+            <div class="dcenter"><div class="p" style="color:#16a34a">76.2%</div><div class="s">32/42</div></div>
+          </div>
+          <div class="rows">
+            <div class="rline"><span class="k">诊断</span><span class="v">52</span></div>
+            <div class="rline"><span class="k">诊断过线</span><span class="v">42</span></div>
+            <div class="rline"><span class="k">已缴费</span><span class="v">32</span></div>
+          </div>
+          <div class="sparkbox"><svg class="spark" data-vals="100,94" width="150" height="72"></svg></div>
+        </div>
+        <div class="tags"><span class="tag">A+-9</span><span class="tag">A-21</span></div>
+        <div class="tmore"><a href="javascript:void(0)">查看详情 →</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 28 -->
+  <div class="card grade">
+    <div class="ghead">
+      <div class="gn">年级B</div>
+      <div class="gm">诊断 142 人 · 诊断过线 118 · 已缴费 84
+        <span class="track" style="width:70px"><span class="fill bg-red" style="width:71.2%"></span><span class="mark" style="left:71.7%"></span></span>
+        <span class="pct r">71.2%</span></div>
+    </div>
+    <div class="tgrid">
+      <div class="tcard">
+        <div class="top"><span>老师C</span><span class="rp g">74.6%</span></div>
+        <div class="tbody">
+          <div class="dwrap">
+            <svg width="96" height="96" viewBox="0 0 96 96">
+              <circle cx="48" cy="48" r="36" fill="none" stroke="#e5e7eb" stroke-width="11"/>
+              <circle class="donut" data-pct="74.6" data-color="#22c55e" cx="48" cy="48" r="36" fill="none" stroke-width="11" transform="rotate(-90 48 48)"/>
+            </svg>
+            <div class="dcenter"><div class="p" style="color:#16a34a">74.6%</div><div class="s">47/63</div></div>
+          </div>
+          <div class="rows">
+            <div class="rline"><span class="k">诊断</span><span class="v">76</span></div>
+            <div class="rline"><span class="k">诊断过线</span><span class="v">63</span></div>
+            <div class="rline"><span class="k">已缴费</span><span class="v">47</span></div>
+          </div>
+          <div class="sparkbox"><svg class="spark" data-vals="88,79" width="150" height="72"></svg></div>
+        </div>
+        <div class="tags"><span class="tag">S+-3</span><span class="tag">S-8</span><span class="tag">A+-16</span><span class="tag">A-14</span></div>
+        <div class="tmore"><a href="javascript:void(0)">查看详情 →</a></div>
+      </div>
+      <div class="tcard">
+        <div class="top"><span>老师D</span><span class="rp o">67.3%</span></div>
+        <div class="tbody">
+          <div class="dwrap">
+            <svg width="96" height="96" viewBox="0 0 96 96">
+              <circle cx="48" cy="48" r="36" fill="none" stroke="#e5e7eb" stroke-width="11"/>
+              <circle class="donut" data-pct="67.3" data-color="#f59e0b" cx="48" cy="48" r="36" fill="none" stroke-width="11" transform="rotate(-90 48 48)"/>
+            </svg>
+            <div class="dcenter"><div class="p" style="color:#f59e0b">67.3%</div><div class="s">37/55</div></div>
+          </div>
+          <div class="rows">
+            <div class="rline"><span class="k">诊断</span><span class="v">66</span></div>
+            <div class="rline"><span class="k">诊断过线</span><span class="v">55</span></div>
+            <div class="rline"><span class="k">已缴费</span><span class="v">37</span></div>
+          </div>
+          <div class="sparkbox"><svg class="spark" data-vals="70,82,12" width="150" height="72"></svg></div>
+        </div>
+        <div class="tags"><span class="tag">A+-11</span><span class="tag">A-19</span></div>
+        <div class="tmore"><a href="javascript:void(0)">查看详情 →</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 29 -->
+  <div class="card grade">
+    <div class="ghead">
+      <div class="gn">年级C</div>
+      <div class="gm">诊断 121 人 · 诊断过线 102 · 已缴费 71
+        <span class="track" style="width:70px"><span class="fill bg-red" style="width:69.6%"></span><span class="mark" style="left:71.7%"></span></span>
+        <span class="pct r">69.6%</span></div>
+    </div>
+    <div class="tgrid">
+      <div class="tcard">
+        <div class="top"><span>老师E</span><span class="rp g">72.7%</span></div>
+        <div class="tbody">
+          <div class="dwrap">
+            <svg width="96" height="96" viewBox="0 0 96 96">
+              <circle cx="48" cy="48" r="36" fill="none" stroke="#e5e7eb" stroke-width="11"/>
+              <circle class="donut" data-pct="72.7" data-color="#22c55e" cx="48" cy="48" r="36" fill="none" stroke-width="11" transform="rotate(-90 48 48)"/>
+            </svg>
+            <div class="dcenter"><div class="p" style="color:#16a34a">72.7%</div><div class="s">48/66</div></div>
+          </div>
+          <div class="rows">
+            <div class="rline"><span class="k">诊断</span><span class="v">78</span></div>
+            <div class="rline"><span class="k">诊断过线</span><span class="v">66</span></div>
+            <div class="rline"><span class="k">已缴费</span><span class="v">48</span></div>
+          </div>
+          <div class="sparkbox"><svg class="spark" data-vals="80,91,100" width="150" height="72"></svg></div>
+        </div>
+        <div class="tags"><span class="tag">S-4</span><span class="tag">A+-13</span><span class="tag">A-31</span></div>
+        <div class="tmore"><a href="javascript:void(0)">查看详情 →</a></div>
+      </div>
+      <div class="tcard">
+        <div class="top"><span>老师F</span><span class="rp o">63.9%</span></div>
+        <div class="tbody">
+          <div class="dwrap">
+            <svg width="96" height="96" viewBox="0 0 96 96">
+              <circle cx="48" cy="48" r="36" fill="none" stroke="#e5e7eb" stroke-width="11"/>
+              <circle class="donut" data-pct="63.9" data-color="#f59e0b" cx="48" cy="48" r="36" fill="none" stroke-width="11" transform="rotate(-90 48 48)"/>
+            </svg>
+            <div class="dcenter"><div class="p" style="color:#f59e0b">63.9%</div><div class="s">23/36</div></div>
+          </div>
+          <div class="rows">
+            <div class="rline"><span class="k">诊断</span><span class="v">43</span></div>
+            <div class="rline"><span class="k">诊断过线</span><span class="v">36</span></div>
+            <div class="rline"><span class="k">已缴费</span><span class="v">23</span></div>
+          </div>
+          <div class="sparkbox"><svg class="spark" data-vals="85,52" width="150" height="72"></svg></div>
+        </div>
+        <div class="tags"><span class="tag">A+-2</span><span class="tag">A-17</span></div>
+        <div class="tmore"><a href="javascript:void(0)">查看详情 →</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 30 -->
+  <div class="card grade">
+    <div class="ghead">
+      <div class="gn">年级D</div>
+      <div class="gm">诊断 41 人 · 诊断过线 30 · 已缴费 21
+        <span class="track" style="width:70px"><span class="fill bg-red" style="width:70%"></span><span class="mark" style="left:71.7%"></span></span>
+        <span class="pct r">70.0%</span></div>
+    </div>
+    <div class="tgrid">
+      <div class="tcard">
+        <div class="top"><span>老师G</span><span class="rp o">70.0%</span></div>
+        <div class="tbody">
+          <div class="dwrap">
+            <svg width="96" height="96" viewBox="0 0 96 96">
+              <circle cx="48" cy="48" r="36" fill="none" stroke="#e5e7eb" stroke-width="11"/>
+              <circle class="donut" data-pct="70" data-color="#f59e0b" cx="48" cy="48" r="36" fill="none" stroke-width="11" transform="rotate(-90 48 48)"/>
+            </svg>
+            <div class="dcenter"><div class="p" style="color:#f59e0b">70.0%</div><div class="s">21/30</div></div>
+          </div>
+          <div class="rows">
+            <div class="rline"><span class="k">诊断</span><span class="v">41</span></div>
+            <div class="rline"><span class="k">诊断过线</span><span class="v">30</span></div>
+            <div class="rline"><span class="k">已缴费</span><span class="v">21</span></div>
+          </div>
+          <div class="sparkbox"><svg class="spark" data-vals="0,55,70" width="150" height="72"></svg></div>
+        </div>
+        <div class="tmore"><a href="javascript:void(0)">查看详情 →</a></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">教师详情</div>
+  <div class="tlinks">
+    <span>老师B：<a href="javascript:void(0)">年级A</a><a href="javascript:void(0)">年级C</a></span>
+    <span>老师C：<a href="javascript:void(0)">年级B</a><a href="javascript:void(0)">年级C</a></span>
+    <span>老师A：<a href="javascript:void(0)">年级A</a><a href="javascript:void(0)">年级B</a></span>
+    <span>老师E：<a href="javascript:void(0)">年级C</a><a href="javascript:void(0)">年级D</a></span>
+    <span>老师F：<a href="javascript:void(0)">年级C</a></span>
+    <span>老师D：<a href="javascript:void(0)">年级B</a></span>
+    <span>老师G：<a href="javascript:void(0)">年级D</a></span>
+  </div>
+  <div class="charts">
+    <div class="card" style="padding:14px 18px 18px;">
+      <div class="ct" style="padding:0 0 10px;">转化率</div>
+      <div id="ratechart"></div>
+      <div class="axis"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span style="text-align:right">100%</span></div>
+    </div>
+    <div class="card" style="padding:14px 18px 18px;">
+      <div class="ct" style="padding:0 0 10px;">诊断人次</div>
+      <div id="cntchart"></div>
+      <div class="axis"><span>0</span><span>25</span><span>50</span><span>75</span><span style="text-align:right">100</span></div>
+    </div>
+  </div>
+  <div class="cfoot">统计口径：该教师全部年级的诊断数据（包括本年级和其他年级）</div>
+
+</div>
+
+<script>
+var NS = 'http://www.w3.org/2000/svg';
+// single donuts
+document.querySelectorAll('circle.donut').forEach(function(c){
+  var r = parseFloat(c.getAttribute('r'));
+  var C = 2*Math.PI*r;
+  var p = parseFloat(c.dataset.pct)/100;
+  c.setAttribute('stroke', c.dataset.color);
+  c.setAttribute('stroke-dasharray', (C*p)+' '+C);
+});
+// status donut
+(function(){
+  var vals = [243,52,18,30,25,22,22];
+  var cols = ['#22c55e','#ef4444','#6b7280','#3b82f6','#f97316','#1f2937','#f59e0b'];
+  var total = vals.reduce(function(a,b){return a+b;},0);
+  var svg = document.getElementById('statusdonut');
+  var r=56, C=2*Math.PI*r, acc=0;
+  vals.forEach(function(v,i){
+    var c = document.createElementNS(NS,'circle');
+    c.setAttribute('cx',75); c.setAttribute('cy',75); c.setAttribute('r',r);
+    c.setAttribute('fill','none'); c.setAttribute('stroke',cols[i]); c.setAttribute('stroke-width',16);
+    c.setAttribute('stroke-dasharray',(C*v/total)+' '+C);
+    c.setAttribute('stroke-dashoffset', -C*acc/total);
+    c.setAttribute('transform','rotate(-90 75 75)');
+    svg.appendChild(c); acc+=v;
+  });
+})();
+// grade table
+(function(){
+  var rows = [
+    ['年级A',108,89,67,75.3,'g'],
+    ['年级B',142,118,84,71.2,'r'],
+    ['年级C',121,102,71,69.6,'r'],
+    ['年级D',41,30,21,70.0,'r']
+  ];
+  var tb = document.getElementById('gradetable');
+  rows.forEach(function(rw){
+    var tr = document.createElement('tr');
+    var last = rw[4]==='r' && rw[5-1]===0 && rw[4]===0 ? '—' : rw[4].toFixed(1)+'%';
+    if (rw[4]===0) last='0.0%';
+    tr.innerHTML = '<td>'+rw[0]+'</td><td class="num">'+rw[1]+'</td><td class="num">'+rw[2]+'</td><td class="num">'+rw[3]+'</td>'+
+      '<td class="num"><div class="ratecell"><span class="track"><span class="fill '+(rw[5]==='g'?'bg-green':'bg-red')+'" style="width:'+Math.max(rw[4],1.5)+'%"></span><span class="mark" style="left:71.7%"></span></span><span class="pct '+rw[5]+'">'+last+'</span></div></td>';
+    tb.appendChild(tr);
+  });
+})();
+// sparklines
+document.querySelectorAll('svg.spark').forEach(function(svg){
+  var vals = svg.dataset.vals.split(',').map(Number);
+  var W=150, H=72, pad=14, top=16, base=50;
+  var n=vals.length;
+  var xs = vals.map(function(v,i){ return n===1?W/2 : pad + i*(W-2*pad)/(n-1); });
+  var ys = vals.map(function(v){ return top + (1 - v/100)*(base - top); });
+  function anch(i){ return n===1?'middle' : (i===0?'start' : (i===n-1?'end' : 'middle')); }
+  var poly = document.createElementNS(NS,'polyline');
+  poly.setAttribute('points', xs.map(function(x,i){return x+','+ys[i];}).join(' '));
+  poly.setAttribute('fill','none'); poly.setAttribute('stroke','#3b82f6'); poly.setAttribute('stroke-width','1.5');
+  svg.appendChild(poly);
+  if(n>1){
+    var area = document.createElementNS(NS,'polygon');
+    area.setAttribute('points', xs[0]+','+base+' '+xs.map(function(x,i){return x+','+ys[i];}).join(' ')+' '+xs[n-1]+','+base);
+    area.setAttribute('fill','rgba(59,130,246,0.12)'); area.setAttribute('stroke','none');
+    svg.insertBefore(area,poly);
+  }
+  vals.forEach(function(v,i){
+    var c=document.createElementNS(NS,'circle');
+    c.setAttribute('cx',xs[i]); c.setAttribute('cy',ys[i]); c.setAttribute('r','2.5');
+    c.setAttribute('fill', i===n-1 ? '#f59e0b' : '#3b82f6');
+    svg.appendChild(c);
+    var t=document.createElementNS(NS,'text');
+    t.setAttribute('x',xs[i]); t.setAttribute('y',ys[i]-6); t.setAttribute('text-anchor',anch(i));
+    t.setAttribute('font-size','9'); t.setAttribute('fill','#565d68');
+    t.textContent = v+'%';
+    svg.appendChild(t);
+  });
+  var labs = n===3 ? ['上上月','上月','本月'] : ['上月','本月'];
+  vals.forEach(function(v,i){
+    var t=document.createElementNS(NS,'text');
+    t.setAttribute('x',xs[i]); t.setAttribute('y',H-6); t.setAttribute('text-anchor',anch(i));
+    t.setAttribute('font-size','9'); t.setAttribute('fill','#9ca3af');
+    t.textContent = labs[i];
+    svg.appendChild(t);
+  });
+});
+// trend line chart
+(function(){
+  var vals=[14,32,41,26,17,15,20,24,18,45,61,53,96,29];
+  var labs=['7月','8月','9月','10月','11月','12月','26年','2月','3月','4月','5月','6月','7月','8月'];
+  var svg=document.getElementById('trendchart');
+  var W=1180,H=210,L=44,R=16,T=14,B=34,max=100;
+  var xs=vals.map(function(v,i){return L+i*(W-L-R)/(vals.length-1);});
+  var ys=vals.map(function(v){return T+(1-v/max)*(H-T-B);});
+  [0,25,50,75,100].forEach(function(tk){
+    var y=T+(1-tk/max)*(H-T-B);
+    var ln=document.createElementNS(NS,'line');
+    ln.setAttribute('x1',L);ln.setAttribute('x2',W-R);ln.setAttribute('y1',y);ln.setAttribute('y2',y);
+    ln.setAttribute('stroke', tk===0?'#d7dae0':'#eef0f3');
+    svg.appendChild(ln);
+    var t=document.createElementNS(NS,'text');
+    t.setAttribute('x',L-8);t.setAttribute('y',y+3);t.setAttribute('text-anchor','end');
+    t.setAttribute('font-size','10');t.setAttribute('fill','#9ca3af');t.textContent=tk;
+    svg.appendChild(t);
+  });
+  labs.forEach(function(lb,i){
+    var t=document.createElementNS(NS,'text');
+    t.setAttribute('x',xs[i]);t.setAttribute('y',H-10);t.setAttribute('text-anchor','middle');
+    t.setAttribute('font-size','10');t.setAttribute('fill','#9ca3af');t.textContent=lb;
+    svg.appendChild(t);
+  });
+  // smooth path
+  var d='M'+xs[0]+','+ys[0];
+  for(var i=0;i<xs.length-1;i++){
+    var x0=xs[Math.max(i-1,0)],y0=ys[Math.max(i-1,0)],x1=xs[i],y1=ys[i],x2=xs[i+1],y2=ys[i+1],x3=xs[Math.min(i+2,xs.length-1)],y3=ys[Math.min(i+2,xs.length-1)];
+    var c1x=x1+(x2-x0)/6,c1y=y1+(y2-y0)/6,c2x=x2-(x3-x1)/6,c2y=y2-(y3-y1)/6;
+    d+=' C'+c1x+','+c1y+' '+c2x+','+c2y+' '+x2+','+y2;
+  }
+  var grad=document.createElementNS(NS,'linearGradient');
+  grad.setAttribute('id','tg');grad.setAttribute('x1','0');grad.setAttribute('y1','0');grad.setAttribute('x2','0');grad.setAttribute('y2','1');
+  grad.innerHTML='<stop offset="0" stop-color="rgba(59,130,246,0.25)"/><stop offset="1" stop-color="rgba(59,130,246,0)"/>';
+  svg.appendChild(grad);
+  var area=document.createElementNS(NS,'path');
+  area.setAttribute('d',d+' L'+xs[xs.length-1]+','+(H-B)+' L'+xs[0]+','+(H-B)+' Z');
+  area.setAttribute('fill','url(#tg)');
+  svg.appendChild(area);
+  var p=document.createElementNS(NS,'path');
+  p.setAttribute('d',d);p.setAttribute('fill','none');p.setAttribute('stroke','#3b82f6');p.setAttribute('stroke-width','2');
+  svg.appendChild(p);
+})();
+// bottom bar charts
+function bars(el, data, max, unit){
+  data.forEach(function(d){
+    var row=document.createElement('div'); row.className='hbar';
+    row.innerHTML='<span class="nm">'+d[0]+'</span><span class="area"><span class="bar '+({g:'bg-green',o:'bg-orange',b:'bg-blue'}[d[2]]||'bg-blue')+'" style="width:'+(d[1]/max*100)+'%"></span><span class="bv" style="left:calc('+(d[1]/max*100)+'% + 8px)">'+d[1]+(unit||'')+'</span></span>';
+    el.appendChild(row);
+  });
+}
+bars(document.getElementById('ratechart'), [
+  ['老师B',81.4,'g'],['老师C',74.6,'g'],['老师A',72.9,'g'],['老师E',70.2,'o'],['老师G',70.0,'o'],['老师D',67.3,'o'],['老师F',63.9,'o']
+],100,'%');
+bars(document.getElementById('cntchart'), [
+  ['老师E',84,'b'],['老师D',66,'b'],['老师C',61,'b'],['老师A',59,'b'],['老师B',58,'b'],['老师F',43,'b'],['老师G',41,'b']
+],100,'');
+</script>
+</body>
+</html>
