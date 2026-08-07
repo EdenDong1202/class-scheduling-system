@@ -422,15 +422,35 @@ flowchart TD
         <div class="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white">
           <div class="border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-medium text-slate-500">诊断课数据看板</div>
           <div class="p-3">
-            <iframe
-              src="https://htmlpreview.github.io/?https://github.com/EdenDong1202/class-scheduling-system/blob/master/apps/%E8%AF%8A%E6%96%AD%E8%AF%BE%E8%BD%AC%E5%8C%96%E6%95%B0%E6%8D%AE%E7%9C%8B%E6%9D%BF.html"
-              title="诊断课数据看板"
-              loading="lazy"
-              referrerpolicy="no-referrer-when-downgrade"
-              allow="clipboard-read; clipboard-write; fullscreen"
-              style="width:100%;height:640px;border:0;border-radius:12px;display:block;"></iframe>
+            <div id="dash-scaler" style="width:100%;overflow:hidden;">
+              <iframe
+                src="https://htmlpreview.github.io/?https://github.com/EdenDong1202/class-scheduling-system/blob/master/apps/%E8%AF%8A%E6%96%AD%E8%AF%BE%E8%BD%AC%E5%8C%96%E6%95%B0%E6%8D%AE%E7%9C%8B%E6%9D%BF.html"
+                title="诊断课数据看板"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                allow="clipboard-read; clipboard-write; fullscreen"
+                style="width:1240px;height:2900px;border:0;border-radius:12px;display:block;transform-origin:top left;"></iframe>
+            </div>
           </div>
         </div>
+        <script>
+          (function () {
+            var W = 1240, H = 2900;
+            function fitDash() {
+              var box = document.getElementById('dash-scaler');
+              if (!box) return;
+              var s = box.clientWidth / W;
+              var f = box.querySelector('iframe');
+              f.style.transform = 'scale(' + s + ')';
+              box.style.height = (H * s) + 'px';
+            }
+            fitDash();
+            window.addEventListener('load', fitDash);
+            window.addEventListener('resize', fitDash);
+            setTimeout(fitDash, 300);
+            setTimeout(fitDash, 1200);
+          })();
+        </script>
       </section>
 
       <!-- 7. Quick start -->
