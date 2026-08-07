@@ -422,14 +422,17 @@ flowchart TD
         <div class="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white">
           <div class="border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-medium text-slate-500">诊断课数据看板</div>
           <div class="p-3">
-            <div id="dash-scaler" style="width:100%;overflow:hidden;">
-              <iframe
-                src="https://htmlpreview.github.io/?https://github.com/EdenDong1202/class-scheduling-system/blob/master/apps/%E8%AF%8A%E6%96%AD%E8%AF%BE%E8%BD%AC%E5%8C%96%E6%95%B0%E6%8D%AE%E7%9C%8B%E6%9D%BF.html"
-                title="诊断课数据看板"
-                loading="lazy"
-                referrerpolicy="no-referrer-when-downgrade"
-                allow="clipboard-read; clipboard-write; fullscreen"
-                style="width:1240px;height:2900px;border:0;border-radius:12px;display:block;transform-origin:top left;"></iframe>
+            <div id="dash-frame-outer" style="position:relative;width:100%;height:640px;overflow-y:auto;overflow-x:hidden;border-radius:12px;">
+              <div id="dash-scale-wrap" style="position:relative;width:100%;">
+                <iframe
+                  id="dash-frame"
+                  src="https://htmlpreview.github.io/?https://github.com/EdenDong1202/class-scheduling-system/blob/master/apps/%E8%AF%8A%E6%96%AD%E8%AF%BE%E8%BD%AC%E5%8C%96%E6%95%B0%E6%8D%AE%E7%9C%8B%E6%9D%BF.html"
+                  title="诊断课数据看板"
+                  loading="lazy"
+                  referrerpolicy="no-referrer-when-downgrade"
+                  allow="clipboard-read; clipboard-write; fullscreen"
+                  style="position:absolute;top:0;left:0;width:1240px;height:2900px;border:0;transform-origin:top left;"></iframe>
+              </div>
             </div>
           </div>
         </div>
@@ -437,12 +440,13 @@ flowchart TD
           (function () {
             var W = 1240, H = 2900;
             function fitDash() {
-              var box = document.getElementById('dash-scaler');
-              if (!box) return;
-              var s = box.clientWidth / W;
-              var f = box.querySelector('iframe');
+              var outer = document.getElementById('dash-frame-outer');
+              if (!outer) return;
+              var wrap = document.getElementById('dash-scale-wrap');
+              var f = document.getElementById('dash-frame');
+              var s = outer.clientWidth / W;
               f.style.transform = 'scale(' + s + ')';
-              box.style.height = (H * s) + 'px';
+              wrap.style.height = (H * s) + 'px';
             }
             fitDash();
             window.addEventListener('load', fitDash);
